@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<title>水经注 · 山河行迹 </title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --a1:#0d47a1;--a2:#1565c0;--a3:#1e88e5;--a4:#42a5f5;--a5:#90caf9;--a6:#e3f2fd;
+  --text:#0a2540;--dim:#3a6080;--border:rgba(21,101,192,0.18);
+  --sans:'PingFang SC','Microsoft YaHei',sans-serif;
+  --serif:'Noto Serif SC','STSong',serif;
+  --brush:'Ma Shan Zheng','STKaiti',cursive;
+}
+html,body{height:100%;font-family:var(--sans);overflow:hidden;color:var(--text)}
+.grad-bg{background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(144,202,249,.45) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 80% 80%,rgba(66,165,245,.28) 0%,transparent 55%),linear-gradient(160deg,#c5e6fb 0%,#d8f0ff 40%,#ecf7ff 100%)}
+#pg-start{position:fixed;inset:0;z-index:8000;display:flex;align-items:center;justify-content:center;transition:opacity .7s}
+#pg-start.out{opacity:0;pointer-events:none}
+.wbg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.wbg::before{content:'';position:absolute;width:700px;height:700px;border-radius:50%;top:-250px;left:-200px;background:radial-gradient(circle,rgba(21,101,192,.1) 0%,transparent 70%);animation:wf 9s ease-in-out infinite}
+.wbg::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;bottom:-150px;right:-100px;background:radial-gradient(circle,rgba(144,202,249,.2) 0%,transparent 70%);animation:wf 11s ease-in-out infinite reverse}
+@keyframes wf{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(25px,18px) scale(1.06)}}
+.s-box{position:relative;z-index:1;text-align:center;padding:70px 90px 58px;background:rgba(255,255,255,.76);border-radius:40px;border:1px solid rgba(255,255,255,.9);box-shadow:0 24px 70px rgba(13,71,161,.14),0 4px 18px rgba(13,71,161,.08),inset 0 1px 0 rgba(255,255,255,.8);backdrop-filter:blur(22px);max-width:720px;width:92%}
+.s-wave{font-size:2.2rem;color:var(--a4);letter-spacing:.35em;margin-bottom:20px}
+.s-title{font-family:var(--brush);font-size:5.8rem;background:linear-gradient(135deg,var(--a1) 0%,var(--a3) 55%,var(--a4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.38em;margin-bottom:18px;filter:drop-shadow(0 2px 10px rgba(21,101,192,.22))}
+.s-sub{font-family:var(--serif);font-size:1.2rem;color:var(--dim);letter-spacing:.22em;margin-bottom:32px}
+.s-divider{display:flex;align-items:center;gap:18px;margin-bottom:28px}
+.s-dl{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(21,101,192,.3),transparent)}
+.s-dt{font-family:var(--serif);font-size:.9rem;color:var(--dim);letter-spacing:.06em;white-space:nowrap}
+.s-desc{font-size:.9rem;color:var(--dim);line-height:2.4;margin-bottom:42px;letter-spacing:.04em}
+#btn-start{padding:16px 70px;border-radius:40px;border:none;cursor:pointer;font-family:var(--serif);font-size:1rem;letter-spacing:.22em;background:linear-gradient(135deg,var(--a1) 0%,var(--a3) 70%,var(--a4) 100%);color:#fff;box-shadow:0 6px 26px rgba(13,71,161,.38);transition:all .25s}
+#btn-start:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(13,71,161,.5)}
+#pg-intro{position:fixed;inset:0;z-index:7000;display:none;flex-direction:column;overflow-y:auto;transition:opacity .5s}
+#pg-intro.show{display:flex}
+#pg-intro.out{opacity:0;pointer-events:none}
+.inav{height:54px;flex-shrink:0;background:rgba(255,255,255,.9);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 30px;gap:18px;backdrop-filter:blur(14px);box-shadow:0 1px 12px rgba(13,71,161,.08);position:sticky;top:0;z-index:10}
+.inav-back{background:none;border:1.5px solid var(--border);border-radius:22px;padding:5px 16px;font-size:.72rem;color:var(--dim);cursor:pointer;transition:all .18s}
+.inav-back:hover{background:var(--a6);color:var(--a2);border-color:var(--a4)}
+.inav-t{font-family:var(--brush);font-size:1.28rem;color:var(--a2);letter-spacing:.12em}
+.inav-m{font-size:.65rem;color:var(--dim);margin-left:auto;letter-spacing:.06em}
+.i-body{flex:1;padding:26px 32px 32px;max-width:1160px;width:100%;margin:0 auto}
+.i-row1{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;height:360px}
+.i-bio{background:rgba(255,255,255,.86);border-radius:20px;border:1px solid rgba(255,255,255,.92);box-shadow:0 6px 30px rgba(13,71,161,.1);backdrop-filter:blur(16px);overflow:hidden;display:flex;flex-direction:column}
+.i-bio-h{padding:18px 24px 14px;background:linear-gradient(135deg,rgba(13,71,161,.07) 0%,rgba(66,165,245,.03) 100%);border-bottom:1px solid rgba(21,101,192,.1);flex-shrink:0}
+.i-badge{display:inline-block;font-size:.62rem;letter-spacing:.14em;background:linear-gradient(90deg,var(--a2),var(--a3));color:#fff;padding:3px 13px;border-radius:20px;margin-bottom:8px}
+.i-name{font-family:var(--brush);font-size:2.2rem;background:linear-gradient(135deg,var(--a1),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.1em}
+.i-en{font-size:.68rem;color:var(--dim);letter-spacing:.08em;margin-top:2px}
+.i-bio-b{padding:14px 22px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(21,101,192,.18) transparent}
+.i-bio-b::-webkit-scrollbar{width:3px}
+.i-bio-b::-webkit-scrollbar-thumb{background:rgba(21,101,192,.2);border-radius:2px}
+.ir{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid rgba(21,101,192,.07);font-size:.8rem}
+.ir:last-child{border-bottom:none}
+.ir-l{flex-shrink:0;width:54px;font-size:.63rem;letter-spacing:.08em;color:var(--a4);padding-top:1px}
+.ir-v{font-family:var(--serif);color:var(--text);line-height:1.72}
+.ir-v em{color:var(--a2);font-style:normal;font-weight:600}
+.i-bq{margin:10px 0 0;padding:10px 14px;background:rgba(21,101,192,.05);border-left:3px solid var(--a4);border-radius:0 9px 9px 0;font-family:var(--serif);font-size:.74rem;color:var(--dim);line-height:1.82;font-style:italic}
+.i-mmap{background:rgba(255,255,255,.86);border-radius:20px;border:1px solid rgba(255,255,255,.92);box-shadow:0 6px 30px rgba(13,71,161,.1);backdrop-filter:blur(16px);overflow:hidden;display:flex;flex-direction:column}
+.i-mmap-h{padding:12px 20px;background:linear-gradient(135deg,rgba(13,71,161,.06) 0%,transparent 100%);border-bottom:1px solid rgba(21,101,192,.1);flex-shrink:0;display:flex;align-items:center;gap:8px}
+.i-mmap-dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--a3),var(--a4))}
+.i-mmap-t{font-size:.7rem;color:var(--a2);letter-spacing:.1em}
+.i-mmap-s{font-size:.6rem;color:var(--dim);margin-left:auto}
+#mini-map{flex:1}
+.i-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.ist{background:rgba(255,255,255,.86);border-radius:14px;padding:16px 10px;text-align:center;border:1px solid rgba(255,255,255,.92);box-shadow:0 4px 18px rgba(13,71,161,.08);transition:all .2s;cursor:default}
+.ist:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(13,71,161,.15)}
+.ist-n{font-size:1.4rem;font-weight:700;background:linear-gradient(135deg,var(--a2),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ist-l{font-size:.63rem;color:var(--dim);margin-top:4px}
+.i-video{background:rgba(255,255,255,.86);border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,.92);box-shadow:0 6px 28px rgba(13,71,161,.1);margin-bottom:22px}
+.i-vid-h{padding:14px 22px 12px;background:linear-gradient(135deg,rgba(13,71,161,.06) 0%,transparent 100%);border-bottom:1px solid rgba(21,101,192,.1);display:flex;align-items:center;gap:10px}
+.i-vid-icon{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#f06292,#e91e63);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0}
+.i-vid-l{font-size:.74rem;color:var(--a2);letter-spacing:.08em}
+.i-vid-s{font-size:.62rem;color:var(--dim);margin-left:auto}
+.i-vid-f{width:100%;display:block;border:none;aspect-ratio:16/7}
+.i-actions{display:flex;flex-direction:column;align-items:center;gap:10px}
+#btn-enter{padding:15px 68px;border-radius:40px;border:none;cursor:pointer;font-family:var(--serif);font-size:.92rem;letter-spacing:.18em;background:linear-gradient(135deg,var(--a1) 0%,var(--a3) 70%,var(--a4) 100%);color:#fff;box-shadow:0 8px 30px rgba(13,71,161,.38);transition:all .25s}
+#btn-enter:hover{transform:translateY(-2px);box-shadow:0 12px 38px rgba(13,71,161,.48)}
+.i-hint{font-size:.64rem;color:var(--dim);letter-spacing:.06em}
+#pg-map{position:fixed;inset:0;z-index:100;display:none;flex-direction:column}
+#pg-map.show{display:flex}
+#topbar{height:58px;flex-shrink:0;background:linear-gradient(135deg,#cfe3ff,#e1efff,#d4e8ff);backdrop-filter:blur(12px);border-bottom:1px solid rgba(60,100,160,0.25);box-shadow:0 2px 12px rgba(0,0,0,0.03),0 1px 0 rgba(255,255,255,0.7) inset;display:flex;align-items:center;padding:0 28px;z-index:600;position:relative}
+.tb-logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.tb-w{font-family:var(--brush);font-size:1.4rem;background:linear-gradient(135deg,#1565c0,#1e88e5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 6px rgba(21,101,192,0.3))}
+.tb-n{font-family:var(--serif);font-size:1.05rem;color:#1a3a6e;letter-spacing:0.1em;font-weight:500;text-shadow:0 1px 0 rgba(255,255,255,0.6)}
+.tb-sp{color:rgba(30,60,110,0.3);margin:0 8px}
+.tb-s{font-size:0.7rem;color:#2c5f8a;letter-spacing:0.08em;background:rgba(255,255,255,0.7);padding:4px 12px;border-radius:40px;font-weight:500;box-shadow:inset 0 1px 0 rgba(0,0,0,0.02),0 1px 2px rgba(0,0,0,0.05)}
+.tb-flex{flex:1}
+.tb-m{font-size:0.68rem;color:#2c6288;background:rgba(255,255,255,0.7);border:1px solid rgba(70,120,170,0.2);border-radius:40px;padding:4px 14px;letter-spacing:0.04em;font-weight:500;backdrop-filter:blur(4px)}
+#mid{position:relative;flex:1;overflow:hidden}
+#map{position:absolute;inset:0;z-index:1}
+#toolbar{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:7px;z-index:500}
+.tg{background:rgba(255,255,255,.95);border-radius:12px;overflow:hidden;border:1px solid rgba(21,101,192,.15);box-shadow:0 4px 20px rgba(13,71,161,.13);backdrop-filter:blur(14px);display:flex;flex-direction:column}
+.tbtn{width:42px;height:42px;border:none;background:transparent;color:var(--a2);cursor:pointer;font-size:1.05rem;display:flex;align-items:center;justify-content:center;transition:all .18s;position:relative}
+.tbtn:hover{background:rgba(21,101,192,.08);color:var(--a3)}
+.tbtn.on{background:linear-gradient(135deg,var(--a2),var(--a3));color:#fff}
+.tbtn+.tbtn{border-top:1px solid rgba(21,101,192,.1)}
+.ttip{position:absolute;right:48px;top:50%;transform:translateY(-50%);background:rgba(10,37,64,.9);color:#fff;font-size:.62rem;white-space:nowrap;padding:4px 10px;border-radius:7px;pointer-events:none;opacity:0;transition:opacity .14s;font-family:var(--sans)}
+.tbtn:hover .ttip{opacity:1}
+#tile-panel{position:absolute;top:12px;right:64px;z-index:600;background:rgba(255,255,255,.97);border-radius:14px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(13,71,161,.18);padding:14px;display:none;min-width:200px;backdrop-filter:blur(14px)}
+#tile-panel.show{display:block;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:translateX(0)}}
+.tp-title{font-size:.65rem;letter-spacing:.12em;color:var(--dim);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.tp-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;cursor:pointer;transition:all .16s;margin-bottom:3px}
+.tp-item:hover{background:var(--a6)}
+.tp-item.sel{background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.2)}
+.tp-thumb{width:38px;height:28px;border-radius:5px;flex-shrink:0;border:1px solid rgba(21,101,192,.15);display:flex;align-items:center;justify-content:center;font-size:16px}
+.tp-info{flex:1}
+.tp-name{font-size:.74rem;color:var(--text);font-weight:500}
+.tp-desc{font-size:.6rem;color:var(--dim);margin-top:1px}
+.tp-check{color:var(--a3);font-size:.8rem;opacity:0}
+.tp-item.sel .tp-check{opacity:1}
+#chart-panel{position:absolute;top:12px;right:64px;z-index:600;background:rgba(255,255,255,.97);border-radius:16px;border:1px solid var(--border);box-shadow:0 8px 32px rgba(13,71,161,.16);padding:18px;display:none;width:320px;backdrop-filter:blur(14px)}
+#chart-panel.show{display:block;animation:fadeIn .18s ease}
+.cp-title{font-size:.75rem;letter-spacing:.1em;color:var(--a2);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.cp-title span{font-size:.62rem;color:var(--dim);margin-left:auto}
+#chart-canvas{width:100%;height:180px;display:block}
+.cp-stat{margin-top:12px;padding:10px;background:var(--a6);border-radius:9px;text-align:center}
+.cp-big{font-size:1.4rem;font-weight:700;color:var(--a2);font-family:var(--sans)}
+.cp-sl{font-size:.62rem;color:var(--dim);margin-top:2px}
+.fbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:500;border-radius:30px;display:none;align-items:center;gap:12px;padding:8px 22px;font-size:.7rem;backdrop-filter:blur(12px);box-shadow:0 4px 20px rgba(13,71,161,.18)}
+.fbar.show{display:flex}
+#cmp-bar{background:rgba(255,255,255,.95);border:1px solid rgba(21,101,192,.2);color:var(--a2)}
+#tour-bar{background:rgba(21,101,192,.92);color:#fff;bottom:58px}
+.fbc{background:none;border:1px solid currentColor;border-radius:16px;padding:2px 12px;font-size:.62rem;color:inherit;cursor:pointer;opacity:.8}
+.fbc:hover{opacity:1}
+#card{position:absolute;top:12px;left:16px;width:340px;z-index:500;background:rgba(255,255,255,.96);border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.92);box-shadow:0 10px 40px rgba(13,71,161,.16);backdrop-filter:blur(18px);transition:all .3s cubic-bezier(.4,0,.2,1);max-height:calc(100% - 140px);display:flex;flex-direction:column}
+#ch-head{padding:18px 20px 14px;background:linear-gradient(135deg,var(--a2),var(--a3));position:relative}
+.ch-lbl{font-size:.6rem;letter-spacing:.18em;color:rgba(255,255,255,.62);margin-bottom:6px}
+.ch-phase{display:inline-block;font-size:.58rem;letter-spacing:.1em;background:rgba(255,255,255,.22);border-radius:12px;padding:2px 9px;color:rgba(255,255,255,.85);margin-bottom:5px}
+.ch-ttl{font-family:var(--serif);font-size:1.12rem;color:#fff;letter-spacing:.06em;line-height:1.38;font-weight:400}
+.ch-per{font-size:.65rem;color:rgba(255,255,255,.7);margin-top:5px}
+.ch-col{position:absolute;top:13px;right:13px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.ch-col:hover{background:rgba(255,255,255,.32)}
+#cb{overflow-y:auto;padding:16px 20px;scrollbar-width:thin;scrollbar-color:rgba(21,101,192,.18) transparent;flex:1}
+#cb::-webkit-scrollbar{width:3px}
+#cb::-webkit-scrollbar-thumb{background:rgba(21,101,192,.2);border-radius:2px}
+.c-lead{font-family:var(--serif);font-size:1.06rem;line-height:2.12;color:var(--text);margin-bottom:15px}
+.loc{color:var(--a2);cursor:pointer;border-bottom:1px dotted rgba(21,101,192,.35)}
+.loc:hover{color:var(--a3)}
+.rtags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px}
+.rtag{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:4px 12px;font-size:.82rem;cursor:pointer;transition:all .18s;border-width:1.5px;border-style:solid;font-family:var(--serif)}
+.rtag:hover{opacity:.8}
+.cquote{border-left:3px solid var(--a4);padding:11px 14px;margin-bottom:14px;background:rgba(21,101,192,.04);border-radius:0 9px 9px 0;font-family:var(--serif);font-size:.86rem;color:var(--dim);font-style:italic;line-height:1.88}
+.cstats{display:flex;gap:7px;margin-bottom:4px}
+.cst{flex:1;background:rgba(21,101,192,.05);border:1px solid rgba(21,101,192,.1);border-radius:10px;padding:9px 6px;text-align:center}
+.csn{font-size:1.08rem;font-weight:700;background:linear-gradient(135deg,var(--a2),var(--a3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.csl{font-size:.65rem;color:var(--dim);margin-top:2px}
+#cf{display:flex;gap:7px;padding:11px 18px;border-top:1px solid rgba(21,101,192,.07);background:rgba(227,242,253,.6);flex-shrink:0}
+.nav-btn{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--a2);font-size:.78rem;cursor:pointer;transition:all .18s;font-family:var(--sans)}
+.nav-btn:hover{background:var(--a2);color:#fff;border-color:var(--a2)}
+.nav-btn:disabled{opacity:.28;cursor:default}
+#card.coll #cb,#card.coll #cf{display:none}
+/* 时间轴左下角 */
+#tl{position:absolute;bottom:20px;left:20px;right:auto;max-width:calc(100% - 40px);background:rgba(255,255,250,0.94);backdrop-filter:blur(20px);border-radius:32px;padding:12px 20px;box-shadow:0 8px 28px rgba(13,71,161,0.2),0 1px 0 rgba(255,255,255,0.6) inset;border:1px solid rgba(21,101,192,0.2);z-index:450;overflow-x:visible;white-space:normal}
+#tl-inner{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:12px 20px;padding:0}
+.tli{display:inline-flex;align-items:center;gap:0;cursor:pointer;background:transparent}
+.tli-capsule{display:inline-flex;align-items:center;gap:8px;padding:6px 16px 6px 12px;border-radius:36px;background:rgba(255,255,255,0.85);border:1px solid rgba(21,101,192,0.16);box-shadow:0 1px 4px rgba(21,101,192,0.06);transition:all 0.2s}
+.tli:hover .tli-capsule{border-color:rgba(21,101,192,0.4);background:rgba(255,255,255,0.96);transform:translateY(-1px)}
+.tli.active .tli-capsule{background:linear-gradient(135deg,#1565c0,#1e88e5);border-color:transparent;box-shadow:0 4px 18px rgba(21,101,192,0.4);transform:translateY(-2px)}
+.tli-dot{width:8px;height:8px;border-radius:50%;background:rgba(21,101,192,0.3);border:1.5px solid rgba(21,101,192,0.2)}
+.tli.active .tli-dot{background:#fff;border-color:rgba(255,255,255,0.6)}
+.tli-right{display:inline-flex;flex-direction:column;line-height:1.2}
+.tli-lbl{font-family:var(--serif);font-size:0.78rem;font-weight:500;color:var(--text)}
+.tli.active .tli-lbl{color:#fff;font-weight:700}
+.tli-yr{font-size:0.6rem;color:var(--dim)}
+.tli.active .tli-yr{color:rgba(255,255,255,0.75)}
+.tli-phase{font-size:0.62rem;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(21,101,192,0.12);color:#1565c0}
+.tli.active .tli-phase{background:rgba(255,255,255,0.22);color:#fff}
+.tli-phase-kai{background:rgba(46,125,50,0.12);color:#2e7d32}
+.tli-phase-fa{background:rgba(21,101,192,0.12);color:#1565c0}
+.tli-phase-gao{background:rgba(198,40,40,0.1);color:#c62828}
+.tli-phase-jie{background:rgba(106,27,154,0.1);color:#6a1b9a}
+.tli.active .tli-phase-kai,.tli.active .tli-phase-fa,.tli.active .tli-phase-gao,.tli.active .tli-phase-jie{background:rgba(255,255,255,0.22);color:#fff}
+.tli+.tli::before{display:none}
+/* 图例右下角，上移放大 */
+.map-legend{position:absolute;bottom:180px;right:20px;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-radius:20px;padding:14px 18px;box-shadow:0 6px 16px rgba(0,0,0,0.15);border:1px solid rgba(21,101,192,0.25);z-index:460;pointer-events:none;font-family:var(--sans);min-width:180px}
+.map-legend h4{font-size:0.85rem;margin-bottom:8px;color:#1a3a6e;letter-spacing:0.05em;font-weight:700}
+.map-legend ul{list-style:none;margin:0;padding:0}
+.map-legend li{display:flex;align-items:center;gap:10px;margin-bottom:8px;color:var(--text);font-size:0.75rem}
+.legend-color{width:24px;height:5px;border-radius:3px}
+.legend-color.circle{width:12px;height:12px;border-radius:50%;background:#1565c0;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.1)}
+/* 河流弹窗艺术化、小巧、只显示名称、自动错开位置 */
+.river-popup .leaflet-popup-content-wrapper {
+  background: rgba(255, 248, 235, 0.95);
+  border: 1px solid #d9c9a0;
+  border-radius: 24px;
+  padding: 0;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,245,215,0.6) inset;
+  backdrop-filter: blur(4px);
+}
+.river-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+  min-width: 100px;
+  max-width: 140px;
+  font-family: var(--serif);
+  text-align: center;
+}
+.river-popup .leaflet-popup-tip {
+  background: rgba(255, 248, 235, 0.95);
+  border: 1px solid #d9c9a0;
+}
+.river-popup .leaflet-popup-close-button {
+  color: #b28b5e;
+  font-size: 14px;
+  top: 5px;
+  right: 8px;
+  font-weight: normal;
+}
+.river-name-card {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5a3e1b;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.river-name-card::before {
+  content: "〽️";
+  font-size: 0.7rem;
+  margin-right: 6px;
+  opacity: 0.7;
+}
+/* 标准点弹窗保持原样 */
+.mpop .leaflet-popup-content-wrapper{background:#fff;border:1.5px solid rgba(21,101,192,.22);border-radius:16px;padding:0;box-shadow:0 12px 36px rgba(13,71,161,.2)}
+.mpop .leaflet-popup-content{margin:0;width:260px !important}
+.mpop .leaflet-popup-tip{background:#fff}
+.mpop .leaflet-popup-close-button{color:rgba(21,101,192,.5);font-size:16px;top:6px;right:8px}
+.pi{padding:15px 17px}
+.pi-tag{font-size:.58rem;letter-spacing:.14em;color:var(--a4);margin-bottom:3px}
+.pi-name{font-size:.9rem;color:var(--text);font-weight:600;margin-bottom:2px}
+.pi-t{font-size:.62rem;color:var(--dim);margin-bottom:8px}
+.pi-d{font-size:.76rem;color:#1a3a52;line-height:1.75}
+.pi-q{font-size:.68rem;color:var(--dim);font-style:italic;margin-top:8px;padding-top:7px;border-top:1px solid rgba(21,101,192,.1)}
+.mpop2 .leaflet-popup-content-wrapper{background:#fff;border:1.5px solid rgba(21,101,192,.25);border-radius:12px;padding:0;box-shadow:0 8px 28px rgba(13,71,161,.2)}
+.mpop2 .leaflet-popup-content{margin:0;width:auto !important;min-width:230px;max-width:300px}
+.mpop2 .leaflet-popup-tip{background:#fff}
+.mpop2 .leaflet-popup-close-button{color:rgba(21,101,192,.5);top:8px;right:10px}
+.p2{padding:14px 18px}
+.p2-tag{font-size:.6rem;letter-spacing:.1em;color:var(--a4);margin-bottom:5px;display:block}
+.p2-name{font-size:.95rem;color:#0a2540;font-weight:700;margin-bottom:6px;white-space:nowrap}
+.p2-desc{font-size:.75rem;color:#3a6080;line-height:1.68}
+.rtip{background:rgba(10,37,64,.9);color:#90caf9;border:none;border-radius:6px;font-size:.68rem;padding:3px 10px}
+#compare-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.compare-container{width:90%;height:85%;background:#1a2a3a;border-radius:24px;overflow:hidden;display:flex;gap:4px;box-shadow:0 20px 40px rgba(0,0,0,0.4);border:1px solid rgba(100,150,200,0.5)}
+.compare-panel{flex:1;position:relative;background:#0a1a2a}
+.compare-panel .map-title{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.7);color:#fff;padding:6px 14px;border-radius:30px;font-size:0.85rem;z-index:10;font-family:var(--serif);backdrop-filter:blur(4px);pointer-events:none;letter-spacing:1px}
+.compare-panel .map-title i{font-style:normal;margin-right:6px}
+.compare-panel.left .map-title{background:rgba(21,101,192,0.85)}
+.compare-panel.right .map-title{background:rgba(67,160,71,0.85)}
+.close-compare{position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:40px;padding:8px 20px;font-size:0.9rem;cursor:pointer;z-index:2100;font-family:var(--sans);backdrop-filter:blur(8px);transition:0.2s}
+.close-compare:hover{background:#c62828;transform:scale(1.02)}
+</style>
+</head>
+<body>
+<div id="pg-start" class="grad-bg"><div class="wbg"></div><div class="s-box"><div class="s-wave">≋ ≋ ≋</div><div class="s-title">水经山河</div><div class="s-sub">郦道元 · 万里勘河 · 绘华夏水系</div><div class="s-divider"><div class="s-dl"></div><div class="s-dt">「寻图访迹，所涉之流，辄撰为注。」</div><div class="s-dl"></div></div><div class="s-desc">千年地理史诗 · 躬行证水<br>北魏 · 公元 472—527</div><button id="btn-start" onclick="showIntro()">启  程</button></div></div>
+<div id="pg-intro" class="grad-bg"><div class="inav"><button class="inav-back" onclick="backToStart()">← 返回</button><div class="inav-t">≋ 郦道元 · 人物简介</div><div class="inav-m">北魏 · 地理学家 · 公元 472—527</div></div><div class="i-body"><div class="i-row1"><div class="i-bio"><div class="i-bio-h"><div class="i-badge">北魏 · 地理学家 · 文学家</div><div class="i-name">郦道元</div><div class="i-en">Lì Dào Yuán · 字善长</div></div><div class="i-bio-b"><div class="ir"><div class="ir-l">生卒</div><div class="ir-v">公元 <em>472—527</em> 年，北魏孝昌三年殉国，享年五十五岁</div></div><div class="ir"><div class="ir-l">籍贯</div><div class="ir-v"><em>范阳郡涿县</em>（今河北涿州），出生于北魏都城<em>平城</em>（今大同）</div></div><div class="ir"><div class="ir-l">仕途</div><div class="ir-v">历任尚书郎、冀州长史、颍川太守、鲁阳太守、东荆州刺史、御史中尉等</div></div><div class="ir"><div class="ir-l">成就</div><div class="ir-v">撰《水经注》40卷，记河流 <em>1252 条</em>，注文 <em>30 万字</em>，是中国最重要的古代地理学著作</div></div><div class="ir"><div class="ir-l">精神</div><div class="ir-v">以「<em>因水证地</em>」实学精神，躬行考察，实地勘验，开创中国实证地理学传统</div></div><div class="ir"><div class="ir-l">评价</div><div class="ir-v">被国际学界誉为「<em>中世纪最伟大的地理学家</em>」，《水经注》至今仍是历史地理研究第一手文献</div></div><div class="i-bq">《水经》虽粗疏纲络，又阙旁通。今寻图访述，所涉之流，辄撰为注。——郦道元《水经注序》</div></div></div><div class="i-mmap"><div class="i-mmap-h"><div class="i-mmap-dot"></div><div class="i-mmap-t">出生地 · 籍贯 · 早年地图</div><div class="i-mmap-s">点击标记查看详情</div></div><div id="mini-map"></div></div></div><div class="i-stats"><div class="ist"><div class="ist-n">1252</div><div class="ist-l">记录河流条数</div></div><div class="ist"><div class="ist-n">40卷</div><div class="ist-l">水经注体量</div></div><div class="ist"><div class="ist-n">30万字</div><div class="ist-l">注文总字数</div></div><div class="ist"><div class="ist-n">1500年</div><div class="ist-l">流传影响至今</div></div></div><div class="i-video"><div class="i-vid-h"><div class="i-vid-icon">▶</div><div class="i-vid-l">纪录片 · 郦道元与《水经注》</div><div class="i-vid-s">来源：哔哩哔哩</div></div><iframe class="i-vid-f" src="https://player.bilibili.com/player.html?bvid=BV1eXDjYuE1L&page=1&high_quality=1&danmaku=0&autoplay=0" scrolling="no" frameborder="0" allowfullscreen sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts allow-popups"></iframe></div><div class="i-actions"><button id="btn-enter" onclick="showMap()">开启万里勘河之旅 →</button><div class="i-hint">← → 方向键切换章节 · 点击时间轴节点跳转</div></div></div></div>
+<div id="pg-map"><div id="topbar"><div class="tb-logo" onclick="backToIntro()"><span class="tb-w">≋</span><span class="tb-n">水经注 · 山河行迹</span><span class="tb-sp">|</span><span class="tb-s">郦道元的地理足迹</span></div><div class="tb-flex"></div><div class="tb-m">北魏 · 范阳涿县 · 地理学家 · 公元 472—527</div></div><div id="mid"><div id="map"></div><div id="toolbar"><div class="tg"><button class="tbtn" id="btn-tile" onclick="toggleTilePanel()">🗺<span class="ttip">切换底图</span></button><button class="tbtn" id="btn-cmp" onclick="toggleCompare()">⇌<span class="ttip">今昔对比</span></button><button class="tbtn" id="btn-tour" onclick="toggleTour()">▶<span class="ttip">自动巡游</span></button><button class="tbtn" id="btn-chart" onclick="toggleChart()">📊<span class="ttip">勘察图表</span></button><button class="tbtn" id="btn-trail" onclick="showAllTrails()">📍<span class="ttip">全足迹</span></button></div></div><div id="tile-panel"><div class="tp-title">选择底图风格</div><div id="tp-list"></div></div><div id="chart-panel"><div class="cp-title">📊 郦道元勘察水系数 <span id="cp-year-label"></span></div><canvas id="chart-canvas"></canvas><div class="cp-stat"><div class="cp-big" id="cp-cur-n">—</div><div class="cp-sl" id="cp-cur-l">当前章节累计勘察</div></div></div><div id="cmp-bar" class="fbar"><span>⇌ 今昔对比模式</span><span style="color:var(--a3)">■</span><span style="font-size:.65rem">古水系</span><span style="color:#43a047">■</span><span style="font-size:.65rem">今水系</span><button class="fbc" onclick="toggleCompare()">关闭</button></div><div id="tour-bar" class="fbar"><span>▶ 自动巡游进行中…</span><button class="fbc" onclick="stopTour()">■ 停止</button></div><div id="card"><div id="ch-head"><div class="ch-lbl">第 <span id="ch-num">1</span> 章 · 共 15 章</div><div class="ch-phase" id="ch-phase">开端</div><div class="ch-ttl" id="ch-ttl">—</div><div class="ch-per" id="ch-per">—</div><button class="ch-col" id="col-btn" onclick="toggleCard()">−</button></div><div id="cb"><div class="c-lead" id="c-lead"></div><div class="rtags" id="c-rivers"></div><div class="cquote" id="c-quote"></div><div class="cstats" id="c-stats"></div></div><div id="cf"><button class="nav-btn" id="btn-prev" onclick="go(cur-1)">← 上一章</button><button class="nav-btn" id="btn-next" onclick="go(cur+1)">下一章 →</button></div></div></div><div id="tl"><div id="tl-inner"></div></div><div class="map-legend"><h4>图例</h4><ul><li><div class="legend-color" style="background:linear-gradient(90deg,#ff6d00,#4caf50,#1565c0,#9c27b0,#e91e63,#1e88e5)"></div> 古水系</li><li><div class="legend-color" style="background:#43a047"></div> 今水系（对比）</li><li><div class="legend-color" style="background:#aaa; height:2px; background-image:repeating-linear-gradient(90deg, #aaa 0px, #aaa 4px, transparent 4px, transparent 8px)"></div> 郦道元足迹</li><li><div class="legend-color circle"></div> 历史遗迹</li></ul></div></div><div id="compare-overlay"><div class="compare-container"><div class="compare-panel left"><div class="map-title"><i>🏯</i> 古水系 · 《水经注》记载</div><div id="map-left" style="width:100%; height:100%;"></div></div><div class="compare-panel right"><div class="map-title"><i>🌿</i> 今水系 · 现代河流</div><div id="map-right" style="width:100%; height:100%;"></div></div></div><button class="close-compare" onclick="closeCompare()">✕ 关闭对比</button></div>
+<script>
+const RIVER_COLORS={'桑干河':'#1e88e5','桑干水':'#1e88e5','拒马河':'#29b6f6','易水':'#00bcd4','涞水':'#26c6da','汾河':'#9c27b0','黄河':'#ff6d00','黄河·龙门段':'#ff6d00','沁水':'#ffa000','汉水':'#009688','渭河':'#4caf50','泾河':'#8bc34a','沣水':'#cddc39','洛河':'#1565c0','伊河':'#42a5f5','谷水':'#42a5f5','瀍水':'#64b5f6','涧水':'#90caf9','漳河':'#e91e63','淮河':'#7b1fa2','长江':'#0d47a1','济水':'#0288d1','济水（古）':'#0288d1','黄河故道':'#e64a19','黄河故道（大河故渎）':'#e64a19','王莽河故道':'#ff7043','大河故渎':'#e64a19'};
+const CHAPTERS = [
+  {label:'平城·出生',year:'472年',phase:'开端',title:'北魏都城平城 · 出生',period:'公元472年 · 平城',lead:'郦道元出生于北魏都城平城（今山西大同），父亲郦范是朝中重臣。他自幼接触舆图文献，对地理产生浓厚兴趣。',rivers:[],quote:'《水经》虽粗疏纲络，又阙旁通。',stats:[{n:'0条',l:'初识地图'},{n:'472年',l:'出生平城'}],view:[40.09,113.3,8],riverKeys:[],cumRivers:0,markers:[{p:[40.09,113.3],n:'平城（今大同）',tag:'出生地',t:'472年',d:'北魏都城，郦道元出生于此。',type:'main'}]},
+  {label:'涿县·故里',year:'480年',phase:'开端',title:'范阳涿县 · 故里成长',period:'公元480年 · 涿县',lead:'约480年，郦道元随父迁回祖籍范阳郡涿县（今河北涿州）。少年时常泛舟拒马河，观察河流形态，为日后考察积累经验。',rivers:['拒马河'],quote:'泛舟拒马，始知水势。',stats:[{n:'1条',l:'初识拒马河'}],view:[39.48,115.97,9],riverKeys:['juma'],cumRivers:1,markers:[{p:[39.48,115.97],n:'涿县故里',tag:'祖籍',t:'480年',d:'范阳郡涿县，郦氏世居之地。',type:'main'}]},
+  {label:'桑干·立志',year:'484年',phase:'开端',title:'桑干河畔 · 初识大河',period:'公元484年 · 幽州',lead:'随父游历幽州，在桑干河畔看到大河壮阔，立志考察天下水系。他意识到前代文献记载多有错误，决心亲自勘验。',rivers:['桑干河','拒马河','易水','涞水'],quote:'初识桑干，壮怀激烈。',stats:[{n:'4条',l:'初探水系'}],view:[40.0,115.5,7],riverKeys:['sanggan','juma','yishui','laishui'],cumRivers:4,markers:[{p:[40.2,114.5],n:'桑干河流域',tag:'立志之地',t:'484年',d:'少年郦道元在此立下考察天下河流之志。',type:'key'}]},
+  {label:'青州·随父',year:'490年',phase:'发展',title:'青州随父 · 初涉官场',period:'公元490年 · 青州',lead:'父亲郦范出任青州刺史，郦道元随行，开始实地考察济水河道。他仔细比照文献与实地，发现济水下游河道与《水经》记载存在多处差异，并首次运用“因水证地”的方法逐一订正。这段经历让他认识到，仅凭书本无法获得真实地理知识，必须躬行实践。',rivers:['济水','淄水'],quote:'青州之地，济水所经。',stats:[{n:'2条',l:'初考济水'}],view:[36.7,118.5,8],riverKeys:['ji'],cumRivers:6,markers:[{p:[36.7,118.5],n:'青州',tag:'少年游历',t:'490年',d:'随父居住，考察山东半岛水系。',type:'river'}]},
+  {label:'汾河·龙门',year:'495-500年',phase:'发展',title:'汾水龙门 · 纠正支流',period:'公元495-500年 · 河东',lead:'随朝廷南迁洛阳，沿汾河而下，他发现《水经》对汾河支流沁水、浍水等记载有遗漏甚至错误，遂逐段考察并一一补正。行至龙门（今山西河津禹门口），他亲睹黄河破山奔涌之状，详细测量峡谷宽度与流速，在《水经注》中留下中国最早的峡谷地形定量描述：“两岸悬崖，相距不过数丈，水势湍急，声震百里。”',rivers:['汾河','黄河·龙门段','沁水'],quote:'龙门，河水奔冲，两岸悬崖，声震百里。',stats:[{n:'3条',l:'新增水系'}],view:[36.5,111.0,7],riverKeys:['huang','fen','qin'],cumRivers:9,markers:[{p:[35.6,110.5],n:'龙门',tag:'黄河·龙门段',t:'约498年',d:'测量峡谷宽度与流速。',type:'key'}]},
+  {label:'河东·盐池',year:'498年',phase:'发展',title:'河东盐池 · 物产记录',period:'公元498年 · 河东',lead:'约498年，郦道元专程考察河东盐池（解池，今山西运城盐湖）。该盐池是北魏重要的财政收入来源，他详细记录了盐池规模“东西四十余里，南北七里”，并描述了“垦地为畦，引水灌之”的产盐工艺。这是中国最早的盐湖地理系统记录，开创了经济地理学分支，对后世盐政管理产生了深远影响。',rivers:['涑水'],quote:'河东盐池，东西四十余里。',stats:[{n:'1条',l:'新增水系'}],view:[35.0,111.0,8],riverKeys:[],cumRivers:10,markers:[{p:[35.0,111.0],n:'河东盐池',tag:'盐业地理',t:'498年',d:'详述解池产盐规模与周边水系。',type:'river'}]},
+  {label:'关中·渭河',year:'502年',phase:'发展',title:'关中平原 · 郑国渠',period:'公元502年 · 关中',lead:'景明三年（502年），郦道元出使关中。他重点考察了渭河及其支流泾河、沣水，在泾渭交汇处记载了“泾渭分明”的水色差异，并用文字描述了清浊分明的现象。他还亲赴郑国渠遗址，测量渠道走向，记录其“引泾水，溉泽卤之地四万余顷”，这是中国古代最早的大型水利工程详细文字记录，为后世研究秦汉水利提供了珍贵的第一手资料。',rivers:['渭河','泾河','沣水'],quote:'郑国渠引泾水，溉泽卤之地四万余顷。',stats:[{n:'3条',l:'新增水系'}],view:[34.4,108.5,7],riverKeys:['wei','jing','feng'],cumRivers:13,markers:[{p:[34.3,108.9],n:'郑国渠',tag:'古代水利',t:'502年',d:'灌溉四万顷，世界最早大型水利工程记录。',type:'key'}]},
+  {label:'汉水·问源',year:'505年',phase:'发展',title:'汉水源头 · 定分止争',period:'公元505年 · 汉中',lead:'正始二年（505年），郦道元深入汉中，攀登嶓冢山，实地确认汉水正源。当时关于汉水源头存在激烈争议，有的文献认为出自嶓冢山，有的认为出自其他地方。他通过亲身踏勘，确定“汉水出嶓冢山”，并详细记录了源头地貌、溪流走向及周边植被。这一考证结果被后世地理学家普遍采纳，纠正了前人长达数百年的错误，成为中国古代水文地理的典范。',rivers:['汉水'],quote:'汉水出嶓冢山，东南流，入于大江。',stats:[{n:'1条',l:'新增水系'}],view:[33.1,107.0,9],riverKeys:['han'],cumRivers:14,markers:[{p:[33.1,107.0],n:'汉水源头',tag:'水源辩正',t:'505年',d:'实地考察，纠正前代错误。',type:'key'}]},
+  {label:'洛阳·伊阙',year:'511年',phase:'高潮',title:'洛阳伊阙 · 都城水文',period:'公元511年 · 洛阳',lead:'永平四年（511年），郦道元初至北魏新都洛阳。他首先考察了城南的伊阙（龙门），伊水穿山而过，形成“两山壁立”的峡谷，他记录道：“伊水历龙门山，两山壁立，水出其间，世谓之伊阙矣。”这一描述成为后世研究龙门地貌的经典依据。他还测量了伊河的宽度、流速以及龙门石窟开凿前的地形，为研究佛教艺术与地理环境的关系提供了珍贵资料。',rivers:['洛河','伊河'],quote:'伊水历龙门山，两山壁立，水出其间。',stats:[{n:'2条',l:'新增水系'}],view:[34.56,112.47,10],riverKeys:['luo','yi'],cumRivers:16,markers:[{p:[34.56,112.47],n:'龙门伊阙',tag:'伊水·伊阙',t:'511年',d:'留下最早的伊阙地理文字。',type:'key'}]},
+  {label:'洛阳·四水',year:'515年',phase:'高潮',title:'洛阳四水 · 都城水利图',period:'公元515年 · 洛阳',lead:'延昌四年（515年），郦道元在洛阳任职期间，系统测量了谷水、瀍水、涧水、洛水四条河流。他详细记录了每条河的流量、宽度、季节性变化以及沿岸的渠堰设施，并据此绘制了都城水利图。这是中国历史上第一次对城市水系进行的系统性科学勘测，其成果对后世洛阳的城市建设与防灾具有重要参考价值。他在《水经注》中写道：“谷水出谷城山，东流入洛……瀍水出南原，北流注洛。”这些精确的水文数据至今仍被引用。',rivers:['洛河','谷水','瀍水','涧水'],quote:'谷水出谷城山，东流入洛。',stats:[{n:'4条',l:'新增水系'}],view:[34.62,112.45,11],riverKeys:['luo','gushui','chan','jianshui'],cumRivers:20,markers:[{p:[34.62,112.45],n:'洛阳城',tag:'都城水利',t:'515年',d:'全面考察四水，为都城规划提供依据。',type:'main'}]},
+  {label:'洛阳·著书',year:'524年',phase:'高潮',title:'洛阳著书 · 集大成',period:'公元524年 · 洛阳',lead:'正光五年（524年），郦道元因遭排挤被免官，赋闲洛阳。他将二十余年实地考察成果与400余种古籍文献融为一炉，开始撰写《水经注》。他采用“以注补经”的方式，将原本仅137条河流的《水经》扩充至1252条。全书40卷，约30万字，引用书目436种，保存了大量已失传的古代文献。他在序言中说明创作动机：“《水经》虽粗疏纲络，又阙旁通。今寻图访述，所涉之流，辄撰为注。”这一著作成为中国历史地理学的里程碑。',rivers:['黄河','长江','淮河','济水'],quote:'搜检图籍，验之方志，采访耆旧，著《水经注》四十卷。',stats:[{n:'1252条',l:'记录总数'}],view:[34.62,112.45,11],riverKeys:['huang','yangtze','huai','ji'],cumRivers:1252,markers:[{p:[34.62,112.45],n:'洛阳著书处',tag:'水经注完成',t:'524年',d:'完成中国第一部以河流为纲的地理百科全书。',type:'key'}]},
+  {label:'黄河故道',year:'唐宋以降',phase:'高潮',title:'大河故渎 · 改道理论',period:'郦道元身后 · 考证',lead:'郦道元在《水经注》中首次系统记录了黄河历史改道遗迹。他将周定王五年（前602年）黄河大改道后留下的旧河床命名为“大河故渎”，并描述了其大致走向。他还记录了王莽时期黄河第二次改道的路线。唐代以后，历代治河学者依据郦道元的记载，成功复原了两次大改道的路径。现代考古通过卫星影像验证，郦道元的描述与实际情况高度吻合，证明了他惊人的观察力和超前的地理思维。',rivers:['黄河故道'],quote:'今古世悬，川域改状，下有沙渠，水迹存焉。',stats:[{n:'2次',l:'历史改道'}],view:[36.5,115.5,7],riverKeys:['huang','huanghe_gudao'],cumRivers:1252,markers:[{p:[36.5,115.5],n:'大河故渎',tag:'黄河改道',t:'记载于《水经注》',d:'记录周定王五年大改道。',type:'river'}]},
+  {label:'阴盘·殉国',year:'527年',phase:'结局',title:'阴盘驿 · 以身殉道',period:'公元527年 · 阴盘驿',lead:'孝昌三年（527年），北魏雍州刺史萧宝夤反叛，郦道元被任命为关右大使前去处置。萧宝夤派兵将郦道元围困于阴盘驿（今陕西临潼东）。郦道元宁死不屈，与弟郦道峻、二子同时被杀害，时年五十五岁。临死前他怒斥叛军，并嘱托家人将《水经注》手稿藏于故里。',rivers:[],quote:'山河万里，水注千秋。',stats:[{n:'殉国',l:'年五十五'}],view:[34.42,109.25,9],riverKeys:[],cumRivers:1252,markers:[{p:[34.42,109.25],n:'阴盘驿',tag:'殉国处',t:'527年',d:'郦道元殉国于此。',type:'main'}]},
+  {label:'洛阳·归葬',year:'527年',phase:'结局',title:'洛阳邙山 · 魂归',period:'公元527年 · 洛阳',lead:'郦道元被害后，家人将其归葬于洛阳邙山。邙山是北魏皇族与士族的主要墓葬区，洛河从旁流淌。他的墓志记载其一生功绩，尤其强调“注《水经》四十卷，行于世”。《水经注》此后由他的族人保存，在北魏末年战乱中历经波折，最终传抄流传，成为后世地理学的经典。',rivers:['洛河'],quote:'归葬邙山，山河同在。',stats:[{n:'归葬',l:'邙山'}],view:[34.75,112.6,11],riverKeys:['luo'],cumRivers:1252,markers:[{p:[34.75,112.6],n:'邙山',tag:'归葬地',t:'527年',d:'洛阳邙山，郦道元长眠之处。',type:'main'}]},
+  {label:'涿州·故里',year:'今日',phase:'结局',title:'涿州故里 · 千秋回响',period:'今日 · 河北涿州',lead:'今天，河北涿州市建有郦道元纪念园和故居纪念馆。拒马河依然静静流淌，一如千年前他泛舟时的模样。园内陈列着《水经注》的历代版本、研究文献以及郦道元考察路线图。他的“因水证地”实证精神被中国历史地理学视为圭臬。',rivers:['拒马河','涞水'],quote:'山高水长，道元之志，千古不渝。',stats:[{n:'纪念园',l:'故里新貌'}],view:[39.48,115.97,12],riverKeys:['sanggan','juma','laishui'],cumRivers:1252,markers:[{p:[39.48,115.97],n:'郦道元纪念园',tag:'故里回望',t:'今日',d:'拒马河依旧流淌，纪念园陈列《水经注》历代版本。',type:'main'}]}
+];
+const RIVERS = {
+  huang:{n:'黄河',c:'#ff6d00',w:4,o:0.7,p:[[34.5,96.5],[35.0,98.5],[36.0,100.5],[36.0,102.0],[34.5,104.0],[34.0,106.0],[34.5,107.5],[35.0,109.0],[34.8,110.5],[34.9,112.5],[34.8,113.7],[35.0,114.8],[35.7,115.5],[36.5,116.8],[37.5,118.9]],view:[36.5,110.0,5],desc:'黄河，中国第二长河，郦道元记录其含沙量并首次描述改道。'},
+  fen:{n:'汾河',c:'#9c27b0',w:2.5,o:0.7,p:[[39.0,112.5],[37.5,111.8],[37.0,111.5],[36.5,111.0],[35.5,110.8]],view:[37.5,111.5,8],desc:'汾河，山西最大河流，郦道元纠正了《水经》对支流的遗漏。'},
+  wei:{n:'渭河',c:'#4caf50',w:2.5,o:0.7,p:[[34.6,104.2],[34.5,106.0],[34.4,107.5],[34.4,108.9],[34.5,110.3]],view:[34.4,107.5,7],desc:'渭河，关中平原母亲河，郦道元详考郑国渠遗址。'},
+  han:{n:'汉水',c:'#009688',w:2.5,o:0.7,p:[[33.1,107.0],[32.8,108.0],[32.6,109.0],[32.5,110.5],[32.4,112.0],[30.6,114.3]],view:[32.0,110.0,7],desc:'汉水，长江最大支流，郦道元确认正源在嶓冢山。'},
+  luo:{n:'洛河',c:'#1565c0',w:2.5,o:0.7,p:[[33.8,109.0],[34.3,111.0],[34.6,112.4]],view:[34.3,111.0,8],desc:'洛河，洛阳母亲河，郦道元详细测量其水量。'},
+  yi:{n:'伊河',c:'#42a5f5',w:2,o:0.7,p:[[33.5,111.2],[34.2,112.4],[34.6,112.5]],view:[34.0,112.0,9],desc:'伊河，流经龙门石窟，郦道元留下“伊水历龙门山”名句。'},
+  sanggan:{n:'桑干水',c:'#1e88e5',w:2,o:0.7,p:[[39.9,112.5],[40.0,114.0],[40.1,115.5],[39.7,116.5]],view:[40.0,115.0,8],desc:'桑干河，郦道元少年立志之地，永定河上游。'},
+  ji:{n:'济水（古）',c:'#0288d1',w:1.8,o:0.6,p:[[34.8,113.0],[35.0,114.0],[35.2,115.0],[35.5,116.0],[36.0,117.0]],view:[35.5,115.0,7],desc:'济水，古代四渎之一，郦道元的考证是唯一文献依据。'},
+  huai:{n:'淮河',c:'#7b1fa2',w:2.5,o:0.7,p:[[32.5,113.0],[32.8,114.0],[32.7,115.0],[32.5,116.0],[33.0,118.5]],view:[32.8,115.5,7],desc:'淮河，南北分界线，郦道元详述其源流。'},
+  yangtze:{n:'长江',c:'#0d47a1',w:4,o:0.7,da:'10 5',p:[[32.5,94.5],[33.5,97.0],[32.5,99.0],[31.0,100.5],[29.5,104.0],[29.5,106.5],[30.5,111.0],[30.3,112.0],[30.5,114.0],[30.5,115.0],[30.8,117.0],[31.2,118.0],[31.5,121.5]],view:[30.5,110.0,6],desc:'长江，中国第一长河，郦道元写下“三峡”名篇。'},
+  juma:{n:'拒马河',c:'#29b6f6',w:1.8,o:0.7,p:[[39.8,115.5],[39.6,115.8],[39.48,115.97]],view:[39.6,115.8,9],desc:'拒马河，郦道元故里母亲河，他泛舟其上积累水文数据。'},
+  yishui:{n:'易水',c:'#00bcd4',w:1.8,o:0.7,p:[[39.3,115.0],[39.4,115.5],[39.5,116.0]],view:[39.4,115.3,9],desc:'易水，因“风萧萧兮易水寒”而名，郦道元记录其源流。'},
+  laishui:{n:'涞水',c:'#26c6da',w:1.8,o:0.7,p:[[39.2,114.8],[39.4,115.2],[39.6,115.5]],view:[39.4,115.0,9],desc:'涞水，发源于涞源山区，南流入拒马河。'},
+  qin:{n:'沁水',c:'#ffa000',w:1.8,o:0.7,p:[[35.8,112.5],[35.5,112.8],[35.2,113.2],[35.0,113.4]],view:[35.4,112.9,8],desc:'沁水，黄河支流，郦道元记录其从太行山穿谷的险要地形。'},
+  feng:{n:'沣水',c:'#cddc39',w:1.6,o:0.7,p:[[33.9,108.3],[34.1,108.5],[34.3,108.7]],view:[34.1,108.5,9],desc:'沣水，渭河支流，周文王、武王建都沣水之滨。'},
+  jing:{n:'泾河',c:'#8bc34a',w:2,o:0.7,p:[[36.0,107.0],[35.5,107.5],[35.0,108.0],[34.7,108.5],[34.5,108.9]],view:[35.2,107.8,7],desc:'泾河，“泾渭分明”源出于此，郦道元记录其水色特征。'},
+  zhang:{n:'漳河',c:'#e91e63',w:2.2,o:0.7,p:[[36.6,112.0],[36.4,113.0],[36.1,113.8],[36.0,114.5],[36.3,115.2]],view:[36.3,113.5,7],desc:'漳河，郦道元记录了西门豹治邺引漳灌田的历史遗迹。'},
+  chan:{n:'瀍水',c:'#64b5f6',w:1.5,o:0.7,p:[[34.8,112.3],[34.7,112.4],[34.62,112.45]],view:[34.72,112.38,10],desc:'瀍水，洛阳城北小河，注入洛河。'},
+  gushui:{n:'谷水',c:'#42a5f5',w:1.5,o:0.7,p:[[34.7,112.0],[34.65,112.2],[34.62,112.45]],view:[34.65,112.2,10],desc:'谷水，洛阳西部水源，郦道元记录其是北魏洛阳城的重要水源。'},
+  jianshui:{n:'涧水',c:'#90caf9',w:1.5,o:0.7,p:[[34.75,111.5],[34.68,111.8],[34.62,112.1],[34.62,112.45]],view:[34.68,111.9,9],desc:'涧水，洛阳西郊水系，沿岸有汉魏关隘遗址。'},
+  huanghe_gudao:{n:'黄河故道',c:'#e64a19',w:2,o:0.7,da:'8 4',p:[[35.0,113.5],[35.2,114.5],[35.5,115.5],[36.0,116.5],[36.5,117.5],[37.0,118.0]],view:[36.0,115.5,6],desc:'大河故渎，周定王五年黄河大改道遗留，郦道元最早记录。'}
+};
+const RIVERS_NOW={hn:{n:'黄河（今）',c:'#43a047',w:3,o:.7,da:'6 3',p:[[35.5,96.5],[36,101],[36.5,103.5],[37.5,105.5],[37.2,107],[38.5,107.5],[39.5,110.5],[39,111.5],[38,112.5],[37.5,113.5],[36.5,113],[35.5,113.5],[36,114.5],[35.2,115.8],[37.0,118.5],[38.0,119.2]]},yn:{n:'长江（今）',c:'#43a047',w:3.5,o:.7,da:'6 3',p:[[28.9,102],[29.5,104],[29.6,106.5],[30,108],[30.5,109.5],[30.7,110.5],[30.8,112],[30.5,113],[30.4,114],[30.8,116],[31.8,118],[31.7,121.5]]}};
+const TILES = [{n:'浅色经典',desc:'Carto简洁地图（真实水系）',icon:'🗺',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',attr:'CARTO',s:'abcd'},{n:'卫星影像',desc:'ESRI卫星图',icon:'🛰',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',ref:'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',attr:'Esri'},{n:'地形晕渲',desc:'ESRI地形图',icon:'🏔',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}',attr:'Esri'},{n:'海洋蓝',desc:'ESRI深海底图',icon:'🌊',url:'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',ref:'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}',attr:'Esri'}];
+let map,miniMap,rLayers={},rNow={},mkGroup,segments=[],cur=0,collapsed=false,tileMode=0,cmpOn=false,tourTimer=null,touring=false,baseLayers=[],tilePanelOpen=false,chartPanelOpen=false,animFrame=null,activeRiverPopups=[],compareMapLeft=null,compareMapRight=null,compareActive=false,allTrailMarkers=null;
+function showIntro(){document.getElementById('pg-start').classList.add('out');setTimeout(()=>{document.getElementById('pg-start').style.display='none';document.getElementById('pg-intro').classList.add('show');if(!miniMap)initMiniMap();},650);}
+function backToStart(){document.getElementById('pg-intro').classList.remove('show');document.getElementById('pg-start').style.display='flex';setTimeout(()=>document.getElementById('pg-start').classList.remove('out'),30);}
+function showMap(){document.getElementById('pg-intro').classList.add('out');setTimeout(()=>{document.getElementById('pg-intro').classList.remove('show','out');document.getElementById('pg-map').classList.add('show');if(!map)initMap();},500);}
+function backToIntro(){stopTour();document.getElementById('pg-map').classList.remove('show');document.getElementById('pg-intro').classList.add('show');}
+function initMiniMap(){miniMap=L.map('mini-map',{center:[39.5,114.5],zoom:5,zoomControl:false,attributionControl:false});L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:14}).addTo(miniMap);const pts=[{p:[40.09,113.3],n:'平城',tag:'出生地',d:'公元472年生于北魏都城平城。'},{p:[39.48,115.97],n:'涿县',tag:'祖籍故里',d:'范阳郡涿县。'},{p:[36.7,118.5],n:'青州',tag:'少年游历地',d:'随父居住。'}];pts.forEach(m=>{const icon=L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#1e88e5);border:2.5px solid #fff;box-shadow:0 2px 10px rgba(13,71,161,.5)"></div>`,iconSize:[14,14],className:''});L.marker(m.p,{icon}).bindPopup(`<div class="p2"><span class="p2-tag">📍 ${m.tag}</span><div class="p2-name">${m.n}</div><div class="p2-desc">${m.d}</div></div>`,{className:'mpop2'}).addTo(miniMap);});}
+function initMap(){map=L.map('map',{center:[37,108],zoom:5,zoomControl:false});applyTile(0);L.control.zoom({position:'bottomright'}).addTo(map);Object.entries(RIVERS).forEach(([k,r])=>{const l=L.polyline(r.p,{color:r.c,weight:r.w,opacity:r.o,dashArray:r.da||null,lineJoin:'round'}).bindTooltip(r.n,{className:'rtip'});l.on('click',(e)=>{L.DomEvent.stopPropagation(e);showRiverPopup(k,r,e.latlng);});rLayers[k]=l;l.addTo(map);});mkGroup=L.layerGroup().addTo(map);allTrailMarkers=L.layerGroup().addTo(map);buildTrailSegments();buildTimeline();buildTilePanel();go(0,false);map.on('click',()=>{tilePanelOpen&&toggleTilePanel();chartPanelOpen&&toggleChart();});}
+function buildTrailSegments(){const points=CHAPTERS.map(ch=>ch.view.slice(0,2));for(let i=0;i<points.length-1;i++){const seg=L.polyline([points[i],points[i+1]],{color:'#aaa',weight:2,opacity:0.5,dashArray:'5,5',lineJoin:'round'}).addTo(map);segments.push(seg);}}
+function showAllTrails(){if(allTrailMarkers)allTrailMarkers.clearLayers();const points=CHAPTERS.map(ch=>ch.view.slice(0,2));points.forEach((p,idx)=>{const icon=L.divIcon({html:`<div style="width:12px;height:12px;border-radius:50%;background:#f57c00;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,0.2);"></div>`,iconSize:[12,12],className:''});const popup=`<div class="p2"><span class="p2-tag">📍 第${idx+1}站</span><div class="p2-name">${CHAPTERS[idx].label}</div><div class="p2-desc">${CHAPTERS[idx].period}</div></div>`;L.marker([p[0],p[1]],{icon}).bindPopup(popup,{className:'mpop2'}).addTo(allTrailMarkers);});const bounds=points.filter(p=>p[0]&&p[1]);if(bounds.length)map.flyToBounds(bounds,{padding:[50,50]});}
+function buildTilePanel(){const list=document.getElementById('tp-list');TILES.forEach((t,i)=>{const d=document.createElement('div');d.className='tp-item'+(i===0?' sel':'');d.id='tp-item-'+i;d.onclick=()=>selectTile(i);d.innerHTML=`<div class="tp-thumb">${t.icon}</div><div class="tp-info"><div class="tp-name">${t.n}</div><div class="tp-desc">${t.desc}</div></div><div class="tp-check">✓</div>`;list.appendChild(d);});}
+function selectTile(i){tileMode=i;applyTile(i);document.querySelectorAll('.tp-item').forEach((el,j)=>el.classList.toggle('sel',j===i));}
+function applyTile(i){baseLayers.forEach(l=>{try{map.removeLayer(l)}catch(e){}});baseLayers=[];const t=TILES[i];const l1=L.tileLayer(t.url,{attribution:t.attr,maxZoom:18,subdomains:t.s||'abc'});l1.addTo(map);baseLayers.push(l1);if(t.ref){const l2=L.tileLayer(t.ref,{maxZoom:18,opacity:.75});l2.addTo(map);baseLayers.push(l2);}Object.values(rLayers).forEach(l=>{try{l.bringToFront()}catch(e){}});}
+function toggleTilePanel(){tilePanelOpen=!tilePanelOpen;document.getElementById('tile-panel').classList.toggle('show',tilePanelOpen);if(tilePanelOpen&&chartPanelOpen){chartPanelOpen=false;document.getElementById('chart-panel').classList.remove('show');document.getElementById('btn-chart').classList.remove('on');}document.getElementById('btn-tile').classList.toggle('on',tilePanelOpen);}
+function toggleChart(){chartPanelOpen=!chartPanelOpen;document.getElementById('chart-panel').classList.toggle('show',chartPanelOpen);if(chartPanelOpen&&tilePanelOpen){tilePanelOpen=false;document.getElementById('tile-panel').classList.remove('show');document.getElementById('btn-tile').classList.remove('on');}document.getElementById('btn-chart').classList.toggle('on',chartPanelOpen);if(chartPanelOpen)drawChart(CHAPTERS[cur].cumRivers,cur);}
+const CC=['#1e88e5','#42a5f5','#90caf9','#1565c0','#0d47a1','#26c6da','#00acc1','#4caf50'];
+function drawChart(targetVal,chIdx){const canvas=document.getElementById('chart-canvas'),ctx=canvas.getContext('2d');const W=canvas.offsetWidth,H=180;canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);const data=CHAPTERS.slice(0,chIdx+1).map((c,i)=>({label:c.label,val:c.cumRivers,color:CC[i%CC.length]}));const maxVal=Math.max(...CHAPTERS.map(c=>c.cumRivers));const padL=10,padR=10,padT=16,padB=30,gW=W-padL-padR,gH=H-padT-padB,barW=Math.min(32,(gW/data.length)*0.62),gap=gW/data.length;if(animFrame)cancelAnimationFrame(animFrame);let progress=0;(function animate(){progress=Math.min(1,progress+0.045);ctx.clearRect(0,0,W,H);ctx.strokeStyle='rgba(21,101,192,0.07)';ctx.lineWidth=1;for(let i=1;i<=4;i++){const y=padT+gH*(1-i/4);ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();ctx.fillStyle='rgba(21,101,192,0.4)';ctx.fillText(Math.round(maxVal*i/4),padL,y-2);}data.forEach((d,i)=>{const x=padL+gap*i+gap/2-barW/2,fullH=gH*(d.val/maxVal),h=fullH*progress,y=padT+gH-h;const grad=ctx.createLinearGradient(0,y,0,padT+gH);grad.addColorStop(0,d.color);grad.addColorStop(1,d.color+'44');ctx.fillStyle=grad;ctx.fillRect(x,y,barW,h);if(progress>0.7){ctx.fillStyle='rgba(13,71,161,0.8)';ctx.fillText(d.val,x+barW/2,y-3);}ctx.fillStyle='rgba(58,96,128,0.75)';const lbl=d.label.length>4?d.label.substring(0,4)+'…':d.label;ctx.fillText(lbl,x+barW/2,H-padB+14);});if(progress<1)requestAnimationFrame(animate);})();let n=0,f=0;(function roll(){f++;n=Math.round(targetVal*Math.min(1,f/60));document.getElementById('cp-cur-n').textContent=n.toLocaleString()+'条';if(f<60)requestAnimationFrame(roll);})();document.getElementById('cp-year-label').textContent='— '+CHAPTERS[chIdx].year;}
+function toggleCompare(){if(compareActive){closeCompare();return;}compareActive=true;document.getElementById('btn-cmp').classList.add('on');document.getElementById('cmp-bar').classList.add('show');const overlay=document.getElementById('compare-overlay');overlay.style.display='flex';const center=map.getCenter(),zoom=map.getZoom();compareMapLeft=L.map('map-left').setView([center.lat,center.lng],zoom);L.tileLayer(TILES[tileMode].url,{attribution:TILES[tileMode].attr,maxZoom:18,subdomains:TILES[tileMode].s||'abc'}).addTo(compareMapLeft);Object.entries(RIVERS).forEach(([k,r])=>{L.polyline(r.p,{color:r.c,weight:r.w,opacity:r.o,dashArray:r.da||null}).addTo(compareMapLeft).bindTooltip(r.n,{className:'rtip'});});compareMapRight=L.map('map-right').setView([center.lat,center.lng],zoom);L.tileLayer(TILES[tileMode].url,{attribution:TILES[tileMode].attr,maxZoom:18,subdomains:TILES[tileMode].s||'abc'}).addTo(compareMapRight);Object.entries(RIVERS_NOW).forEach(([k,r])=>{L.polyline(r.p,{color:r.c,weight:r.w,opacity:r.o,dashArray:r.da||null}).addTo(compareMapRight).bindTooltip(r.n,{className:'rtip'});});compareMapLeft.on('move',e=>{if(compareMapRight)compareMapRight.setView(e.target.getCenter(),e.target.getZoom(),{animate:false});});compareMapRight.on('move',e=>{if(compareMapLeft)compareMapLeft.setView(e.target.getCenter(),e.target.getZoom(),{animate:false});});}
+function closeCompare(){if(compareMapLeft)compareMapLeft.remove();if(compareMapRight)compareMapRight.remove();compareMapLeft=compareMapRight=null;compareActive=false;document.getElementById('btn-cmp').classList.remove('on');document.getElementById('cmp-bar').classList.remove('show');document.getElementById('compare-overlay').style.display='none';}
+function toggleTour(){if(touring)stopTour();else startTour();}
+function startTour(){touring=true;document.getElementById('btn-tour').classList.add('on');document.getElementById('btn-tour').innerHTML='⏸<span class="ttip">停止巡游</span>';document.getElementById('tour-bar').classList.add('show');if(cur>=CHAPTERS.length-1)go(0);scheduleTour();}
+function scheduleTour(){if(!touring)return;tourTimer=setTimeout(()=>{if(!touring)return;if(cur<CHAPTERS.length-1){go(cur+1);scheduleTour();}else stopTour();},4800);}
+function stopTour(){touring=false;clearTimeout(tourTimer);document.getElementById('btn-tour').classList.remove('on');document.getElementById('btn-tour').innerHTML='▶<span class="ttip">自动巡游</span>';document.getElementById('tour-bar').classList.remove('show');}
+function clearAllRiverPopups(){activeRiverPopups.forEach(popup=>{if(popup)map.closePopup(popup);});activeRiverPopups=[];}
+function showRiverPopup(key,r,latlng){const content=`<div class="river-name-card">${r.n}</div>`;const popup=L.popup({className:'river-popup',maxWidth:150,minWidth:100,autoClose:false,closeOnClick:false,offset:[0,-8]}).setLatLng(latlng).setContent(content).openOn(map);activeRiverPopups.push(popup);}
+function autoPopupRivers(keys){keys.forEach((key,index)=>{const layer=rLayers[key];if(layer&&layer._latlngs&&layer._latlngs.length){let mid=layer._latlngs[Math.floor(layer._latlngs.length/2)];if(!mid&&layer._latlngs[0])mid=layer._latlngs[0];if(mid){setTimeout(()=>{showRiverPopup(key,RIVERS[key],mid);},index*300);}}});}
+function renderMarkers(ch){mkGroup.clearLayers();ch.markers.forEach(m=>{const sz=m.type==='key'?34:m.type==='main'?28:24;const g='linear-gradient(135deg,#0d47a1,#1565c0)';const icon=L.divIcon({html:`<div style="position:relative;width:${sz+20}px"><div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${g};border:2.5px solid #fff;margin:0 auto;box-shadow:0 3px 16px rgba(13,71,161,.4);display:flex;align-items:center;justify-content:center;"><div style="width:${Math.round(sz*.28)}px;height:${Math.round(sz*.28)}px;border-radius:50%;background:rgba(255,255,255,.92)"></div></div><div style="position:absolute;top:${sz+5}px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 6px #000;">${m.n}</div></div>`,iconSize:[sz+20,sz+26],iconAnchor:[(sz+20)/2,sz/2],popupAnchor:[0,-(sz/2+6)]});const popupHtml=`<div class="pi"><div class="pi-tag">🌊 ${m.tag}</div><div class="pi-name">${m.n}</div><div class="pi-t">${m.t}</div><div class="pi-d">${m.d}</div>${m.q?`<div class="pi-q">「${m.q}」</div>`:''}</div>`;L.marker(m.p,{icon}).bindPopup(popupHtml,{className:'mpop'}).addTo(mkGroup);});setTimeout(()=>{const target=ch.markers.find(m=>m.type==='key')||ch.markers[0];if(target){const layers=mkGroup.getLayers();const found=layers.find(l=>l.getLatLng().lat===target.p[0]&&l.getLatLng().lng===target.p[1]);if(found)found.openPopup();}},1000);}
+function buildTimeline(){const inner=document.getElementById('tl-inner');inner.innerHTML='';const pc={'开端':'tli-phase-kai','发展':'tli-phase-fa','高潮':'tli-phase-gao','结局':'tli-phase-jie'};CHAPTERS.forEach((ch,i)=>{const el=document.createElement('div');el.className='tli'+(i===0?' active':'');el.onclick=()=>go(i);el.innerHTML=`<div class="tli-capsule"><div class="tli-phase ${pc[ch.phase]||'tli-phase-kai'}">${ch.phase}</div><div class="tli-dot"></div><div class="tli-right"><div class="tli-lbl">${ch.label}</div><div class="tli-yr">${ch.year}</div></div></div>`;inner.appendChild(el);});}
+function toggleCard(){collapsed=!collapsed;document.getElementById('card').classList.toggle('coll',collapsed);document.getElementById('col-btn').textContent=collapsed?'+':'−';}
+function fly(c,z){map.flyTo(c,z,{duration:.9});}
+function go(idx,animate=true){if(idx<0||idx>=CHAPTERS.length)return;clearAllRiverPopups();cur=idx;const ch=CHAPTERS[idx];document.getElementById('ch-num').textContent=idx+1;document.getElementById('ch-phase').textContent=ch.phase;document.getElementById('ch-ttl').textContent=ch.title;document.getElementById('ch-per').textContent=ch.period;document.getElementById('c-lead').innerHTML=ch.lead;document.getElementById('c-rivers').innerHTML=ch.rivers.map(r=>{const col=RIVER_COLORS[r]||'var(--a2)';return `<span class="rtag"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:3px;"></span>≋ ${r}</span>`;}).join('');document.getElementById('c-quote').textContent=ch.quote;document.getElementById('c-stats').innerHTML=ch.stats.map(s=>`<div class="cst"><div class="csn">${s.n}</div><div class="csl">${s.l}</div></div>`).join('');document.getElementById('btn-prev').disabled=idx===0;document.getElementById('btn-next').disabled=idx===CHAPTERS.length-1;document.querySelectorAll('.tli').forEach((el,i)=>el.classList.toggle('active',i===idx));const v=ch.view;if(animate)map.flyTo([v[0],v[1]],v[2],{duration:1.3});else map.setView([v[0],v[1]],v[2]);Object.entries(rLayers).forEach(([k,l])=>{const r=RIVERS[k];if(ch.riverKeys.includes(k)){l.setStyle({weight:r.w+1,opacity:0.9});l.bringToFront();}else l.setStyle({weight:r.w,opacity:0.2});});if(chartPanelOpen)drawChart(ch.cumRivers,idx);renderMarkers(ch);autoPopupRivers(ch.riverKeys);}
+window.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1);if(e.key==='Escape')stopTour();});
+</script>
+</body>
+</html>
