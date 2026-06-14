@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>福建省土壤专题地图系统</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.5.0/ol.css" />
+<script src="https://cdn.jsdelivr.net/npm/ol@10.5.0/dist/ol.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Microsoft YaHei','PingFang SC',sans-serif}
+
+/* ===== APP ===== */
+.app{width:100%;height:100%;display:flex;flex-direction:column}
+
+/* ===== HEADER 浅亮绿（保持绿色调，不黄）===== */
+.hd{height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+  background:linear-gradient(135deg,#63b563,#3e9e3e 50%,#2e8e2e);
+  box-shadow:0 4px 24px rgba(0,0,0,.15);
+  border-bottom:1px solid rgba(150,210,150,.2);position:relative;z-index:500}
+.hd-l{display:flex;align-items:center;gap:14px}
+.hd-logo{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#7ece7e,#4eae4e);box-shadow:0 2px 10px rgba(62,158,62,.25);color:#fff}
+.hd-t1{font-size:17px;font-weight:800;color:#fff;letter-spacing:1px;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.1)}
+.hd-t2{font-size:10px;color:rgba(210,240,200,.7);letter-spacing:3px;margin-top:1px}
+.hd-r{display:flex;align-items:center;gap:12px}
+
+/* ===== DROP ===== */
+.drp{position:relative;z-index:500}
+.drp-b{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:600;
+  color:#d0f0c0;background:rgba(62,158,62,.2);border:1px solid rgba(62,158,62,.25);cursor:pointer}
+.drp-b:hover{background:rgba(62,158,62,.3)}
+.drp-m{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border-radius:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,.14);padding:4px;min-width:120px}
+.drp-m.show{display:block}
+.drp-m button{display:block;width:100%;text-align:left;padding:7px 12px;border:none;border-radius:7px;cursor:pointer;
+  font-size:12px;font-weight:500;color:#2e6b2e;background:transparent}
+.drp-m button:hover{background:#e8f5e8}
+.drp-m button.on{background:#4eae4e;color:#fff;font-weight:600}
+.epsg{font-size:10px;font-family:Consolas,monospace;color:rgba(210,240,200,.5);padding:4px 10px;border-radius:6px;background:rgba(62,158,62,.12)}
+
+/* ===== MAP ===== */
+.mw{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%}
+
+/* ===== COORD ===== */
+.cb{position:absolute;bottom:8px;left:14px;z-index:90;background:rgba(27,67,50,.75);color:#c0e8c0;
+  padding:3px 12px;border-radius:5px;font-size:11px;font-family:Consolas,monospace;backdrop-filter:blur(3px)}
+
+/* ===== FULLSCREEN ===== */
+.fs{position:absolute;top:102px;left:14px;z-index:100;width:34px;height:34px;border-radius:8px;border:none;cursor:pointer;
+  background:rgba(255,255,255,.94);color:#2e6b2e;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center}
+.fs:hover{background:#4eae4e;color:#fff}
+
+/* ===== LOADING ===== */
+.lm{position:absolute;inset:0;background:rgba(11,35,24,.3);display:none;align-items:center;justify-content:center;z-index:400;backdrop-filter:blur(1px)}
+.lm.show{display:flex}
+.sp{width:32px;height:32px;border:3px solid rgba(183,228,199,.2);border-top-color:#5eae5e;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== POPUP ===== */
+.pop{position:absolute;background:#fff;border-radius:10px;box-shadow:0 6px 28px rgba(0,0,0,.18);min-width:200px;max-width:280px;z-index:160;overflow:hidden;display:none}
+.pop::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff}
+.pop-h{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:linear-gradient(135deg,#4eae4e,#3e8e3e)}
+.pop-t{color:#fff;font-size:12px;font-weight:700}
+.pop-x{background:none;border:none;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;line-height:1}
+.pop-b{padding:12px}
+.pop-b table{width:100%}
+
+/* ===== MEASURE ===== */
+.mt{background:rgba(255,255,255,.92);border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600;color:#1b4332;
+  box-shadow:0 1px 6px rgba(0,0,0,.08);white-space:nowrap}
+
+/* ===== PANEL 浅色半透明（保持绿色调） ===== */
+.fp{position:absolute;top:50%;right:12px;transform:translateY(-50%);width:308px;max-height:calc(100% - 24px);z-index:200;
+  display:flex;flex-direction:column;border-radius:22px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(27,67,50,.9),rgba(20,55,42,.94));
+  backdrop-filter:blur(16px);border:1px solid rgba(82,183,136,.18);
+  box-shadow:0 8px 48px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04)}
+.fp-c{display:flex;flex-direction:column;padding:12px;gap:8px;overflow:hidden}
+
+.pb{display:flex;flex-direction:column;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden}
+.pb-h{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}
+.pb-h .bar{width:3px;height:13px;border-radius:2px;background:#6ebe6e;flex-shrink:0}
+.pb-h .tit{font-size:11px;font-weight:700;color:#c0e8c0;letter-spacing:.5px}
+.pb-b{padding:8px 10px}
+
+/* themes */
+.tl{display:flex;flex-direction:column;gap:6px}
+.tb{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;padding:10px 14px;border-radius:12px;border:none;background:rgba(255,255,255,.08)}
+.tb.on{background:linear-gradient(135deg,#5eae5e,#4e8e4e);box-shadow:0 4px 16px rgba(64,145,108,.35)}
+.tb-i{font-size:20px;line-height:1;flex-shrink:0}
+.tb-n{font-size:13px;font-weight:700;color:#d0f0d0;line-height:1.2}
+.tb.on .tb-n{color:#fff}
+.tb-d{font-size:10px;color:rgba(183,228,199,.4);margin-top:1px}
+.tb.on .tb-d{color:rgba(255,255,255,.6)}
+.tb-dot{width:7px;height:7px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.5);flex-shrink:0;animation:bth 2s ease-in-out infinite}
+@keyframes bth{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.2);opacity:.7}}
+
+/* legend */
+.lg-box{background:#fff;border-radius:10px;overflow:hidden}
+.lg-in{padding:8px;display:flex;align-items:flex-start;justify-content:center}
+.lg-in img{max-width:100%;height:auto;display:block}
+
+/* tools */
+.rw{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rw-l{font-size:10px;font-weight:700;color:#c0e8c0;white-space:nowrap}
+.rw-v{font-size:12px;font-weight:700;color:#d0f0d0;font-family:Consolas,monospace;min-width:30px;text-align:right}
+input[type=range]{-webkit-appearance:none;height:5px;border-radius:3px;background:rgba(255,255,255,.2);outline:none;flex:1}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#6ebe6e;border:2.5px solid #fff;cursor:pointer;box-shadow:0 0 4px rgba(0,0,0,.1)}
+.tg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.t-b{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0;min-height:52px;border-radius:10px;
+  font-size:10px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,.1);color:#c0e8c0}
+.t-b.on{background:linear-gradient(135deg,#5eae5e,#4e8e4e);color:#fff;box-shadow:0 2px 10px rgba(82,183,136,.3)}
+.t-b span{font-size:15px;line-height:1;margin-bottom:3px}
+.tt{margin-top:6px;padding:5px 10px;border-radius:8px;background:rgba(82,183,136,.15);font-size:10px;color:#c0e8c0;display:none;align-items:center;gap:6px}
+.tt.show{display:flex}
+.tt-d{width:6px;height:6px;border-radius:50%;background:#6ebe6e;animation:bth 1.5s ease-in-out infinite}
+
+/* OL overrides */
+.ol-zoom{top:14px!important;left:14px!important}
+.ol-zoom button{width:34px!important;height:34px!important;font-size:18px!important;background:rgba(255,255,255,.94)!important;
+  color:#2e6b2e!important;border-radius:8px!important;margin:2px!important;box-shadow:0 2px 8px rgba(0,0,0,.08)!important;font-weight:700!important}
+.ol-zoom button:hover{background:#4eae4e!important;color:#fff!important}
+.ol-scale-line{bottom:30px!important;left:14px!important;background:rgba(255,255,255,.88)!important;border-radius:5px!important;padding:2px 10px!important;box-shadow:0 1px 6px rgba(0,0,0,.06)!important}
+.ol-scale-line-inner{border:2px solid #4eae4e!important;border-top:none!important;color:#4eae4e!important;font-size:10px!important;font-weight:700!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ===== HEADER ===== -->
+  <header class="hd">
+    <div class="hd-l">
+      <div class="hd-logo">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div>
+        <div class="hd-t1">福建省土壤专题地图系统</div>
+        <div class="hd-t2">龙岩市永定区仙师乡 · 土壤普查数据可视化</div>
+      </div>
+    </div>
+    <div class="hd-r">
+      <div class="drp">
+        <button id="drpBtn" class="drp-b">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          <span id="drpTxt">ArcGIS 影像</span>
+          <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="drpMenu" class="drp-m"></div>
+      </div>
+      <span class="epsg">EPSG:2436</span>
+    </div>
+  </header>
+
+  <!-- ===== MAP ===== -->
+  <div class="mw">
+    <div id="map"></div>
+    <button class="fs" id="fsBtn" title="全屏"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg></button>
+    <div id="coordBar" class="cb">移动鼠标查看坐标</div>
+
+    <div id="popup" class="pop">
+      <div class="pop-h"><span class="pop-t">📊 要素属性</span><button id="popX" class="pop-x">✕</button></div>
+      <div class="pop-b"><table><tbody id="popBody"></tbody></table></div>
+    </div>
+
+    <div id="mask" class="lm"><div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div class="sp"></div><span style="font-size:11px;color:rgba(183,228,199,.5)">加载中…</span></div></div>
+
+    <!-- ===== FLOATING PANEL ===== -->
+    <div class="fp">
+      <div class="fp-c">
+        <!-- 专题 -->
+        <div class="pb"><div class="pb-h"><div class="bar"></div><span class="tit">专题地图</span></div><div class="pb-b"><div id="themeList" class="tl"></div></div></div>
+        <!-- 图例 -->
+        <div class="pb"><div class="pb-h"><div class="bar"></div><span id="lgTitle" class="tit">🌿 有机质分级 图例</span></div><div class="pb-b"><div class="lg-box"><div class="lg-in"><img id="lgImg" alt="图例"/></div></div></div></div>
+        <!-- 工具 -->
+        <div class="pb"><div class="pb-h"><div class="bar"></div><span class="tit">工具与设置</span></div><div class="pb-b">
+          <div class="rw"><span class="rw-l">透明度</span><input id="opR" type="range" min="0" max="1" step="0.05" value="0.85"/><span id="opV" class="rw-v">85%</span></div>
+          <div class="tg">
+            <button id="bLen" class="t-b"><span>📏</span>测距</button>
+            <button id="bArea" class="t-b"><span>📐</span>测面</button>
+            <button id="bClr" class="t-b"><span>🗑️</span>清除</button>
+            <button id="bRst" class="t-b"><span>🏠</span>复位</button>
+          </div>
+          <div id="tTip" class="tt"><span class="tt-d"></span><span id="tTipT"></span></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ── 投影 ── */
+  proj4.defs('EPSG:2436','+proj=tmerc +lat_0=0 +lon_0=117 +k=1 +x_0=500000 +y_0=0 +ellps=krass +towgs84=31.4,-144.3,-74.8,0,0,0.814,-0.38 +units=m +no_defs +type=crs');
+  ol.proj.proj4.register(proj4);
+
+  var WMS='http://localhost:8081/geoserver/linying/wms', WS='linying';
+  var OVERALL_FALLBACK_EXTENT_4326=[115.84634,23.500683,120.722095,28.317231];
+
+  var THEMES=[
+    {id:'youjizhi',name:'有机质分级',desc:'仙师乡有机质含量等级',icon:'🌿',center:[116.83,24.63],zoom:13},
+    {id:'tushu',name:'土属类型',desc:'福建省各县土属分类',icon:'🏔️',center:[117.75,26.05],zoom:8},
+    {id:'guangai4',name:'灌溉条件',desc:'仙师乡灌溉条件等级',icon:'💧',center:[116.83,24.63],zoom:13}
+  ];
+
+  function parseLayerExtentFromCapabilities(xmlText, layerIds){
+    try{
+      var doc=new DOMParser().parseFromString(xmlText,'text/xml');
+      var layers=doc.getElementsByTagName('Layer');
+      var union=null;
+      for(var i=0;i<layers.length;i++){
+        var layer=layers[i];
+        var nameNode=layer.getElementsByTagName('Name')[0];
+        var name=nameNode?nameNode.textContent:'';
+        var matchedId=null;
+        for(var j=0;j<layerIds.length;j++){
+          if(name===layerIds[j]||name===WS+':'+layerIds[j]){matchedId=layerIds[j];break;}
+        }
+        if(!matchedId) continue;
+
+        var box=layer.getElementsByTagName('LatLonBoundingBox')[0];
+        var extent=null;
+        if(box){
+          extent=[
+            parseFloat(box.getAttribute('minx')||'0'),
+            parseFloat(box.getAttribute('miny')||'0'),
+            parseFloat(box.getAttribute('maxx')||'0'),
+            parseFloat(box.getAttribute('maxy')||'0')
+          ];
+        }else{
+          var geo=layer.getElementsByTagName('EX_GeographicBoundingBox')[0];
+          if(geo){
+            extent=[
+              parseFloat((geo.getElementsByTagName('westBoundLongitude')[0]||{}).textContent||'0'),
+              parseFloat((geo.getElementsByTagName('southBoundLatitude')[0]||{}).textContent||'0'),
+              parseFloat((geo.getElementsByTagName('eastBoundLongitude')[0]||{}).textContent||'0'),
+              parseFloat((geo.getElementsByTagName('northBoundLatitude')[0]||{}).textContent||'0')
+            ];
+          }
+        }
+        if(extent && extent.every(function(v){return !isNaN(v)})){
+          if(!union) union=extent.slice();
+          else ol.extent.extend(union,extent);
+        }
+      }
+      return union;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function fitOverallDataExtent(){
+    if(overallExtent4326){
+      var cached3857=ol.proj.transformExtent(overallExtent4326,'EPSG:4326','EPSG:3857');
+      map.updateSize();
+      map.getView().fit(cached3857,{padding:[36,340,36,36],duration:800,maxZoom:13});
+      return;
+    }
+    fetch(WMS+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities')
+      .then(function(r){return r.text()})
+      .then(function(xmlText){
+        var extent4326=parseLayerExtentFromCapabilities(xmlText,THEMES.map(function(t){return t.id;}));
+        if(!extent4326) extent4326=OVERALL_FALLBACK_EXTENT_4326;
+        overallExtent4326=extent4326;
+        var extent3857=ol.proj.transformExtent(extent4326,'EPSG:4326','EPSG:3857');
+        map.updateSize();
+        map.getView().fit(extent3857,{padding:[36,340,36,36],duration:800,maxZoom:13});
+      })
+      .catch(function(){
+        overallExtent4326=OVERALL_FALLBACK_EXTENT_4326;
+        var extent3857=ol.proj.transformExtent(OVERALL_FALLBACK_EXTENT_4326,'EPSG:4326','EPSG:3857');
+        map.getView().fit(extent3857,{padding:[36,340,36,36],duration:800,maxZoom:13});
+      });
+  }
+  var BASES=[
+    {id:'osm',label:'OSM 地图'},
+    {id:'arcgis',label:'ArcGIS 影像'},
+    {id:'amap',label:'高德地图(有偏移)'},{id:'amap_sat',label:'高德卫星(有偏移)'},
+    {id:'none',label:'无底图'}
+  ];
+
+  var curTheme='youjizhi', curBase='arcgis', activeTool=null, drawInt=null, drawLis=null;
+
+  /* ── 元素 ── */
+  var $=function(s){return document.getElementById(s)};
+  var mask=$('mask'),coordBar=$('coordBar'),popup=$('popup'),popBody=$('popBody'),
+      lgImg=$('lgImg'),lgTitle=$('lgTitle'),opR=$('opR'),opV=$('opV'),
+      tTip=$('tTip'),tTipT=$('tTipT'),drpTxt=$('drpTxt'),drpMenu=$('drpMenu'),themeList=$('themeList');
+
+  function showLoad(b){b?mask.classList.add('show'):mask.classList.remove('show')}
+
+  /* ── 底图 ── */
+  function mkBase(id){
+    var s;
+    switch(id){
+      case'amap':s=new ol.source.XYZ({url:'https://webrd0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',maxZoom:18});break;
+      case'amap_sat':s=new ol.source.XYZ({url:'https://webst0{1-4}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',maxZoom:18});break;
+      case'arcgis':s=new ol.source.XYZ({url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',maxZoom:19});break;
+      case'none':s=new ol.source.XYZ({url:''});break;
+      default:s=new ol.source.OSM();
+    }
+    return new ol.layer.Tile({source:s});
+  }
+
+  /* ── 图层 ── */
+  var baseRef={layer:mkBase('arcgis')};
+  var baseLayer=baseRef.layer;
+  var wmsLayer=new ol.layer.Tile({
+    source:new ol.source.TileWMS({url:WMS,params:{LAYERS:WS+':youjizhi',TILED:true,FORMAT:'image/png',TRANSPARENT:true,VERSION:'1.1.1',SRS:'EPSG:2436'},serverType:'geoserver',transition:200}),
+    opacity:0.85
+  });
+  var vecSrc=new ol.source.Vector();
+  var vecLayer=new ol.layer.Vector({source:vecSrc,style:new ol.style.Style({
+    fill:new ol.style.Fill({color:'rgba(45,106,79,0.1)'}),
+    stroke:new ol.style.Stroke({color:'#5eae5e',width:2.5}),
+    image:new ol.style.Circle({radius:4,fill:new ol.style.Fill({color:'#5eae5e'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})
+  })});
+
+  /* ── 地图 ── */
+  var DEFAULT_CENTER=[117.75,26.05], DEFAULT_ZOOM=8;
+  var map=new ol.Map({
+    target:'map',
+    layers:[baseRef.layer,wmsLayer,vecLayer],
+    view:new ol.View({center:ol.proj.fromLonLat(DEFAULT_CENTER),zoom:DEFAULT_ZOOM,minZoom:4,maxZoom:18}),
+    controls:ol.control.defaults.defaults().extend([new ol.control.ScaleLine({units:'metric',bar:false,minWidth:110})])
+  });
+
+  var overallExtent4326=null;
+  function fitFallbackExtent(duration){
+    var extent3857=ol.proj.transformExtent(OVERALL_FALLBACK_EXTENT_4326,'EPSG:4326','EPSG:3857');
+    map.updateSize();
+    map.getView().fit(extent3857,{padding:[36,340,36,36],duration:duration||0,maxZoom:13});
+  }
+
+  function scheduleInitialExtentFit(){
+    fitFallbackExtent(0);
+    requestAnimationFrame(function(){ fitFallbackExtent(0); });
+    window.addEventListener('load', function(){ fitFallbackExtent(0); }, { once:true });
+    setTimeout(function(){ fitFallbackExtent(0); }, 300);
+    setTimeout(function(){ fitFallbackExtent(0); }, 1000);
+  }
+
+  /* ── 弹出框 ── */
+  var popOv=new ol.Overlay({element:popup,positioning:'bottom-center',offset:[0,-12],autoPan:{animation:{duration:200}}});
+  map.addOverlay(popOv);
+  $('popX').onclick=function(){popup.style.display='none';popOv.setPosition(undefined)};
+
+  /* ── 坐标 ── */
+  map.on('pointermove',function(e){
+    if(e.dragging)return;
+    try{var ll=ol.proj.transform(e.coordinate,'EPSG:3857','EPSG:4326');
+      coordBar.textContent=ll[0].toFixed(6)+'°E, '+ll[1].toFixed(6)+'°N';
+    }catch(ex){coordBar.textContent=e.coordinate.join(', ')}
+  });
+
+  /* ── 点击查询 ── */
+  map.on('singleclick',function(evt){
+    if(activeTool)return;
+    var src=wmsLayer.getSource();
+    var url=src.getFeatureInfoUrl(evt.coordinate,map.getView().getResolution(),'EPSG:3857',{INFO_FORMAT:'application/json',FEATURE_COUNT:10});
+    if(!url)return;
+    fetch(url).then(function(r){return r.json()}).then(function(d){
+      if(d.features&&d.features.length){
+        var p=d.features[0].properties,h='';
+        for(var k in p){if(k!=='geometry'&&k!=='the_geom'&&k!=='geom')
+          h+='<tr><td style="color:#5e9e5e;padding:4px 8px 4px 0;font-size:12px">'+k+'</td><td style="font-weight:600;color:#2e6b2e;font-size:12px">'+(p[k]!=null?p[k]:'-')+'</td></tr>';
+        }
+        popBody.innerHTML=h;popup.style.display='block';popOv.setPosition(evt.coordinate);
+      }else{popup.style.display='none';popOv.setPosition(undefined)}
+    }).catch(function(){});
+  });
+
+  /* ── 加载 ── */
+  wmsLayer.getSource().on('tileloadstart',function(){showLoad(true)});
+  wmsLayer.getSource().on('tileloadend',function(){showLoad(false)});
+  wmsLayer.getSource().on('tileloaderror',function(){showLoad(false)});
+  setTimeout(function(){showLoad(false)},1600);
+
+  /* ── 图例URL ── */
+  function legUrl(id){return WMS+'?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER='+WS+':'+id+'&FORMAT=image/png&WIDTH=22&HEIGHT=22&LEGEND_OPTIONS=fontName:Microsoft%20YaHei;fontSize:14;fontAntiAliasing:true;forceLabels:on;forceTitles:on'}
+
+  /* ── 渲染专题 ── */
+  function renderThemes(){
+    themeList.innerHTML='';
+    THEMES.forEach(function(t){
+      var btn=document.createElement('button');
+      btn.className='tb'+(t.id===curTheme?' on':'');
+      btn.innerHTML='<span class="tb-i">'+t.icon+'</span><div style="flex:1;min-width:0"><div class="tb-n">'+t.name+'</div><div class="tb-d">'+t.desc+'</div></div>'+(t.id===curTheme?'<span class="tb-dot"></span>':'');
+      btn.onclick=function(){switchTheme(t.id)};
+      themeList.appendChild(btn);
+    });
+  }
+
+  function switchTheme(id){
+    curTheme=id; showLoad(true);
+    wmsLayer.getSource().updateParams({LAYERS:WS+':'+id});
+    wmsLayer.getSource().refresh();
+    var cur=THEMES.filter(function(t){return t.id===id})[0];
+    lgTitle.textContent=cur.icon+'  '+cur.name+' 图例';
+    lgImg.src=legUrl(id);
+    renderThemes();
+  }
+
+  /* ── 渲染底图 ── */
+  function renderBases(){
+    drpMenu.innerHTML='';
+    BASES.forEach(function(b){
+      var btn=document.createElement('button');
+      btn.textContent=b.label;
+      btn.className=b.id===curBase?'on':'';
+      btn.onclick=function(){switchBase(b.id)};
+      drpMenu.appendChild(btn);
+    });
+    drpTxt.textContent=BASES.filter(function(b){return b.id===curBase})[0].label;
+  }
+
+  function switchBase(id){
+    curBase=id;
+    map.removeLayer(baseRef.layer);
+    baseRef.layer=mkBase(id);
+    map.getLayers().insertAt(0,baseRef.layer);
+    renderBases();
+    drpMenu.classList.remove('show');
+  }
+
+  $('drpBtn').onclick=function(e){e.stopPropagation();drpMenu.classList.toggle('show')};
+  document.addEventListener('click',function(){drpMenu.classList.remove('show')});
+
+  /* ── 全屏 ── */
+  $('fsBtn').onclick=function(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()};
+
+  /* ── 透明度 ── */
+  opR.oninput=function(){var v=parseFloat(opR.value);wmsLayer.setOpacity(v);opV.textContent=Math.round(v*100)+'%'};
+
+  /* ── 测量 ── */
+  function setTip(t){if(!t){tTip.classList.remove('show');tTipT.textContent=''}else{tTip.classList.add('show');tTipT.textContent=t}}
+
+  function stopMeasure(){
+    if(drawInt){map.removeInteraction(drawInt);drawInt=null}
+    activeTool=null;
+    $('bLen').classList.remove('on');$('bArea').classList.remove('on');
+    setTip('');
+  }
+
+  function startMeasure(type){
+    stopMeasure();
+    var dt=type==='length'?'LineString':'Polygon';
+    drawInt=new ol.interaction.Draw({source:vecSrc,type:dt,style:new ol.style.Style({
+      fill:new ol.style.Fill({color:'rgba(45,106,79,0.06)'}),
+      stroke:new ol.style.Stroke({color:'#5eae5e',width:2,lineDash:[5,5]}),
+      image:new ol.style.Circle({radius:4,fill:new ol.style.Fill({color:'#5eae5e'}),stroke:new ol.style.Stroke({color:'#fff',width:2})})
+    })});
+    var el=document.createElement('div');el.className='mt';
+    var tip=new ol.Overlay({element:el,offset:[12,0],positioning:'center-left'});
+    map.addOverlay(tip);
+    drawInt.on('drawstart',function(evt){
+      drawLis=evt.feature.getGeometry().on('change',function(e){
+        var g=e.target,out='',tc;
+        if(dt==='LineString'){var l=ol.sphere.getLength(g);out=l>1000?(l/1000).toFixed(2)+' km':l.toFixed(1)+' m';tc=g.getLastCoordinate()}
+        else{var a=ol.sphere.getArea(g);out=a>1e6?(a/1e6).toFixed(3)+' km²':a.toFixed(1)+' m²';tc=g.getInteriorPoint().getCoordinates()}
+        el.textContent=out;tip.setPosition(tc);
+      });
+    });
+    drawInt.on('drawend',function(){if(drawLis)ol.Observable.unByKey(drawLis)});
+    map.addInteraction(drawInt);
+    activeTool=type;
+    $('bLen').classList.toggle('on',type==='length');
+    $('bArea').classList.toggle('on',type==='area');
+    setTip(type==='length'?'点击地图画线，双击结束测距':'点击地图画面，双击结束测面');
+  }
+
+  $('bLen').onclick=function(){activeTool==='length'?stopMeasure():startMeasure('length')};
+  $('bArea').onclick=function(){activeTool==='area'?stopMeasure():startMeasure('area')};
+  $('bClr').onclick=function(){
+    stopMeasure();vecSrc.clear();
+    var ovs=map.getOverlays().getArray().slice();
+    ovs.forEach(function(o){var e=o.getElement();if(e&&e.className&&String(e.className).indexOf('mt')>=0)map.removeOverlay(o)});
+  };
+  $('bRst').onclick=function(){
+    fitFallbackExtent(600);
+  };
+
+  /* ── 初始化 ── */
+  lgImg.src=legUrl(curTheme);
+  renderThemes();
+  renderBases();
+  scheduleInitialExtentFit();
+})();
+</script>
+</body>
+</html>
