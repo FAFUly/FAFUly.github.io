@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>福建省土壤专题地图 | 智慧农业·动态图鉴</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css">
+<script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/proj4@2.9.2/dist/proj4.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --blue-900:#0a2540; --blue-800:#0e3b5e; --blue-700:#134e7a; --blue-600:#1a5f8f; --blue-500:#2173a8; --blue-400:#2c8ac4; --blue-300:#5aa9d9; --blue-200:#8ec8ee; --blue-100:#c3e2f7; --blue-50:#e4f1fa; --blue-25:#f2f8fd;
+    --accent:#1a6daa; --accent-dark:#0e4b7a;
+    --danger:#c53030; --success:#1a6b3c; --gold:#b8860b;
+    --text:#172b3a; --text2:#4a6579; --text3:#7393aa;
+    --shadow-sm:0 2px 6px rgba(10,40,70,0.06);
+    --shadow-md:0 8px 22px -6px rgba(10,40,70,0.12);
+    --shadow-lg:0 18px 40px -10px rgba(10,40,70,0.18);
+    --shadow-xl:0 30px 60px -15px rgba(10,40,70,0.28);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+    font-family:'Inter',system-ui,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+    height:100vh;overflow:hidden;
+    background:linear-gradient(170deg,#dae6f2 0%,#e2ecf5 25%,#dce7f1 50%,#e0eaf4 75%,#d8e4ef 100%);
+    background-image:
+        radial-gradient(ellipse at 15% 20%,rgba(26,109,170,0.06) 0%,transparent 55%),
+        radial-gradient(ellipse at 85% 75%,rgba(14,75,122,0.04) 0%,transparent 50%),
+        radial-gradient(ellipse at 50% 50%,rgba(44,138,196,0.02) 0%,transparent 60%);
+}
+
+/* ===== 导航栏 ===== */
+.navbar {
+    position:absolute;top:0;left:0;right:0;height:60px;
+    background:linear-gradient(180deg,#0e3b5e 0%,#0f4470 40%,#134e7a 100%);
+    box-shadow:0 4px 24px -4px rgba(10,40,70,0.35),inset 0 1px 0 rgba(255,255,255,0.12);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 22px;z-index:1001;
+}
+.logo-area{display:flex;align-items:center;gap:11px;}
+.logo-icon {
+    width:38px;height:38px;
+    background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.2);
+    border-radius:12px;display:flex;align-items:center;justify-content:center;
+    color:white;font-size:1.15rem;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+    transition:transform 0.25s;
+}
+.logo-icon:hover{transform:scale(1.04);}
+.title-text h1{font-size:1.12rem;font-weight:700;color:white;letter-spacing:-0.2px;line-height:1.25;}
+.title-text p{font-size:0.62rem;color:rgba(255,255,255,0.65);font-weight:500;letter-spacing:0.5px;}
+.toolbar{display:flex;gap:7px;align-items:center;}
+.tool-btn {
+    background:rgba(255,255,255,0.14);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    color:white;border:1px solid rgba(255,255,255,0.15);padding:7px 16px;border-radius:40px;
+    font-size:0.79rem;font-weight:530;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+    transition:all 0.3s cubic-bezier(0.22,0.85,0.35,1.05);
+    font-family:inherit;white-space:nowrap;letter-spacing:0.2px;
+}
+.tool-btn i{font-size:0.82rem;}
+.tool-btn:hover{background:rgba(255,255,255,0.24);border-color:rgba(255,255,255,0.3);transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.2);}
+.tool-btn.adm{background:rgba(212,160,23,0.25);border-color:rgba(212,160,23,0.4);display:none;}
+.tool-btn.adm:hover{background:rgba(212,160,23,0.35);}
+.user-area{display:flex;align-items:center;gap:9px;}
+.user-pill {
+    display:flex;align-items:center;gap:7px;padding:3px 4px 3px 12px;
+    background:rgba(255,255,255,0.12);border-radius:28px;
+    border:1px solid rgba(255,255,255,0.15);
+    font-size:0.8rem;font-weight:530;color:white;
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+}
+.user-pill .av {
+    width:28px;height:28px;border-radius:50%;
+    background:rgba(255,255,255,0.22);color:white;display:flex;align-items:center;justify-content:center;
+    font-size:0.72rem;font-weight:700;
+}
+.role-tag{font-size:0.6rem;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:0.3px;}
+.role-tag.admin{background:rgba(255,255,255,0.25);color:#ffe8a0;}
+.role-tag.user{background:rgba(255,255,255,0.15);color:#c3e2f7;}
+.btn-ico {
+    background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.15);width:32px;height:32px;
+    border-radius:50%;cursor:pointer;font-size:0.78rem;color:rgba(255,255,255,0.75);
+    transition:all 0.25s;display:flex;align-items:center;justify-content:center;
+}
+.btn-ico:hover{background:rgba(255,255,255,0.2);color:white;border-color:rgba(255,255,255,0.35);}
+.btn-out {
+    background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,150,150,0.35);
+    padding:6px 14px;border-radius:22px;cursor:pointer;font-size:0.72rem;
+    color:#ffb8b8;font-weight:530;transition:all 0.25s;font-family:inherit;
+    white-space:nowrap;
+}
+.btn-out:hover{background:rgba(255,100,100,0.2);border-color:rgba(255,150,150,0.55);color:#ffcccc;}
+
+/* ===== 登录遮罩 ===== */
+.auth-overlay {
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(8,20,35,0.7);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    display:flex;align-items:center;justify-content:center;
+}
+.auth-overlay.hidden{display:none;}
+.auth-card {
+    background:white;border-radius:26px;padding:40px 34px;width:410px;max-width:92vw;
+    box-shadow:0 40px 70px -20px rgba(5,20,40,0.45),0 0 0 1px rgba(0,0,0,0.05);
+    animation:cardIn 0.4s cubic-bezier(0.22,0.85,0.35,1.05);
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+.auth-card .alogo {
+    width:52px;height:52px;background:linear-gradient(145deg,var(--accent),var(--accent-dark));
+    border-radius:14px;display:flex;align-items:center;justify-content:center;
+    color:white;font-size:1.4rem;margin:0 auto 14px;
+    box-shadow:0 10px 20px -6px rgba(14,75,122,0.4);
+}
+.auth-card h2{text-align:center;font-size:1.25rem;font-weight:700;color:var(--blue-800);margin-bottom:3px;letter-spacing:-0.2px;}
+.auth-card .sub{text-align:center;font-size:0.78rem;color:var(--text3);margin-bottom:28px;font-weight:500;}
+.auth-card .fld{margin-bottom:16px;}
+.auth-card .fld label{display:block;font-size:0.78rem;font-weight:600;color:var(--blue-700);margin-bottom:5px;}
+.auth-card .fld input {
+    width:100%;padding:11px 15px;border:2px solid #dce5ef;border-radius:14px;
+    font-size:0.9rem;font-family:inherit;transition:all 0.25s;
+    background:#f8fafc;color:var(--text);outline:none;
+}
+.auth-card .fld input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(26,109,170,0.08);background:white;}
+.auth-card .btn-sub {
+    width:100%;padding:13px;border:none;border-radius:44px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:white;
+    font-size:0.9rem;font-weight:600;cursor:pointer;margin-top:8px;
+    transition:all 0.3s cubic-bezier(0.22,0.85,0.35,1.05);
+    font-family:inherit;letter-spacing:0.4px;
+    box-shadow:0 8px 20px -6px rgba(14,75,122,0.5);
+}
+.auth-card .btn-sub:hover{transform:translateY(-2.5px);box-shadow:0 14px 26px -8px rgba(14,75,122,0.6);}
+.auth-card .tog{text-align:center;margin-top:16px;font-size:0.8rem;color:var(--text2);font-weight:500;}
+.auth-card .tog span{color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s;}
+.auth-card .tog span:hover{text-decoration:none;color:var(--accent-dark);}
+.msg-box{padding:10px 14px;border-radius:12px;font-size:0.78rem;margin-bottom:12px;display:none;font-weight:500;}
+.msg-box.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;display:block;}
+.msg-box.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;display:block;}
+
+/* ===== 地图 ===== */
+#map{width:100%;height:100%;background:#d5dfe8;}
+.status-toast {
+    position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
+    background:rgba(10,30,55,0.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    color:#e4f1fa;font-size:0.72rem;padding:8px 22px;border-radius:44px;
+    z-index:1000;pointer-events:none;border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 8px 20px -4px rgba(5,20,40,0.25);letter-spacing:0.3px;
+}
+
+/* ===== 右侧面板 ===== */
+.side-panel {
+    position:absolute;top:72px;right:14px;width:350px;z-index:1000;
+    display:flex;flex-direction:column;gap:10px;
+    max-height:calc(100vh - 90px);
+    overflow-y:auto;overflow-x:hidden;
+    padding-right:2px;
+}
+.side-panel::-webkit-scrollbar{width:4px;}
+.side-panel::-webkit-scrollbar-track{background:transparent;}
+.side-panel::-webkit-scrollbar-thumb{background:rgba(10,50,90,0.15);border-radius:4px;}
+.panel-module {
+    background:#e6eff7;border-radius:18px;
+    box-shadow:0 4px 20px -6px rgba(10,40,70,0.10),0 0 0 1px rgba(26,109,170,0.10);
+    overflow:visible;transition:all 0.3s ease;flex-shrink:0;
+}
+.module-header {
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;cursor:pointer;user-select:none;
+    background:linear-gradient(180deg,#d9e7f4 0%,#cfe0f0 100%);
+    border-bottom:1px solid #c5d8ea;transition:all 0.25s;
+}
+.module-header h3{font-size:0.9rem;font-weight:650;color:var(--blue-800);display:flex;align-items:center;gap:9px;letter-spacing:-0.1px;}
+.module-header h3 i{font-size:0.88rem;color:var(--accent);}
+.module-header .collapse-icon{font-size:0.72rem;color:var(--text3);transition:transform 0.35s ease;}
+.module-header.collapsed .collapse-icon{transform:rotate(-90deg);}
+.module-body{padding:14px 18px 18px;transition:all 0.3s ease;overflow:hidden;}
+.module-body.hidden{display:none;}
+
+/* 专题图层按钮 */
+.layer-btns{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.layer-btn {
+    background:#dce7f2;border:2px solid #c5d8ea;
+    padding:10px 16px;border-radius:12px;font-size:0.84rem;font-weight:550;
+    cursor:pointer;display:flex;align-items:center;gap:10px;
+    transition:all 0.25s;
+    color:var(--text);font-family:inherit;
+}
+.layer-btn i{width:22px;font-size:0.95rem;color:var(--accent);text-align:center;}
+.layer-btn:hover{background:#cddded;transform:translateX(3px);border-color:var(--blue-300);box-shadow:var(--shadow-sm);}
+.layer-btn.active {
+    background:linear-gradient(110deg,var(--accent),var(--accent-dark));color:white;
+    border-color:transparent;box-shadow:0 6px 16px -4px rgba(14,75,122,0.45);
+}
+.layer-btn.active i{color:white;}
+
+/* 透明度滑块 */
+.opacity-row{display:flex;align-items:center;gap:10px;margin-top:2px;}
+.opacity-row label{font-size:0.76rem;color:var(--text2);font-weight:550;white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.opacity-row input[type=range]{
+    flex:1;height:8px;-webkit-appearance:none;appearance:none;
+    background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--p),#c5d8ea var(--p),#c5d8ea 100%);
+    border-radius:8px;outline:none;
+}
+.opacity-row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:22px;height:22px;
+    background:white;border:2.5px solid var(--accent);border-radius:50%;
+    cursor:pointer;box-shadow:0 3px 10px rgba(10,40,70,0.18);transition:all 0.2s;
+}
+.opacity-row input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.1);box-shadow:0 4px 14px rgba(10,40,70,0.25);}
+.opacity-row .op-val{font-size:0.78rem;color:var(--accent);font-weight:650;min-width:36px;text-align:right;}
+
+/* 图例 */
+.legend-list{display:flex;flex-direction:column;gap:8px;}
+.legend-row{display:flex;align-items:center;gap:10px;font-size:0.78rem;padding:3px 0;}
+.legend-swatch {
+    width:28px;height:15px;border-radius:12px;flex-shrink:0;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.1);
+}
+.legend-label{color:var(--text);font-weight:530;font-size:0.78rem;}
+.legend-note {
+    font-size:0.7rem;color:var(--text2);margin-top:10px;
+    background:#dce7f2;padding:7px 12px;
+    border-radius:10px;line-height:1.5;
+}
+
+/* 工具网格 */
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.tool-chip {
+    padding:10px 12px;border-radius:12px;border:2px solid #c5d8ea;
+    background:#dce7f2;font-size:0.76rem;font-weight:550;
+    cursor:pointer;transition:all 0.25s;
+    font-family:inherit;display:flex;align-items:center;gap:7px;color:var(--text);
+}
+.tool-chip i{color:var(--accent);font-size:0.85rem;width:18px;text-align:center;transition:all 0.25s;}
+.tool-chip:hover{background:#cddded;border-color:var(--blue-300);box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+.tool-chip.active-tool {
+    background:var(--accent);color:white;border-color:transparent;
+    box-shadow:0 6px 16px -4px rgba(14,75,122,0.45);
+}
+.tool-chip.active-tool i{color:white;}
+
+/* 查询结果区 */
+.result-box {
+    background:#ecf3f9;border-radius:12px;padding:10px;margin-top:8px;
+    max-height:160px;overflow-y:auto;
+    border:2px solid #c5d8ea;
+}
+.result-box::-webkit-scrollbar{width:4px;}
+.result-box::-webkit-scrollbar-track{background:transparent;}
+.result-box::-webkit-scrollbar-thumb{background:rgba(10,40,70,0.12);border-radius:4px;}
+.result-box .res-item {
+    padding:9px 10px;margin-bottom:5px;background:white;border-radius:10px;
+    border:1px solid #eef3f8;cursor:pointer;
+    transition:all 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.03);
+}
+.result-box .res-item:hover{background:#e0edf6;border-color:var(--blue-300);box-shadow:0 3px 10px -3px rgba(14,75,122,0.1);}
+.result-box .res-item:last-child{margin-bottom:0;}
+.result-box .res-item .res-title{font-weight:650;color:var(--blue-800);margin-bottom:3px;font-size:0.78rem;}
+.result-box .res-item .res-detail{color:var(--text2);font-size:0.73rem;line-height:1.5;}
+.result-box .res-time{font-size:0.66rem;color:var(--text3);margin-top:3px;}
+.result-box .empty{text-align:center;color:var(--text3);padding:18px 0;font-size:0.78rem;}
+
+.section-label {
+    font-size:0.72rem;color:var(--text3);font-weight:650;
+    text-transform:uppercase;letter-spacing:0.6px;margin:10px 0 6px;
+    display:flex;align-items:center;gap:6px;
+}
+.btn-mini {
+    padding:5px 14px;border-radius:14px;border:none;font-size:0.72rem;
+    cursor:pointer;font-family:inherit;transition:all 0.25s;font-weight:550;
+}
+.btn-mini.clear{background:#fef2f2;color:var(--danger);}
+.btn-mini.clear:hover{background:#fecaca;box-shadow:0 2px 6px rgba(197,48,48,0.1);}
+.btn-mini.act{background:var(--accent);color:white;box-shadow:0 3px 8px rgba(14,75,122,0.2);}
+.btn-mini.act:hover{background:var(--accent-dark);}
+
+/* ===== 坐标弹窗 ===== */
+#coordPopup {
+    position:absolute;z-index:2000;pointer-events:auto;
+    filter:drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+    opacity:0;transform:translateY(5px);transition:opacity 0.2s,transform 0.2s;
+}
+#coordPopup.show{opacity:1;transform:translateY(0);}
+#coordPopup .popup-body {
+    background:white;border-radius:14px;padding:10px 14px;
+    font-size:0.76rem;color:var(--text);line-height:1.5;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+    min-width:190px;text-align:center;position:relative;
+}
+#coordPopup .popup-arrow-wrap{text-align:center;height:8px;}
+#coordPopup .popup-arrow-wrap::after{
+    content:'';display:inline-block;width:0;height:0;
+    border-left:7px solid transparent;border-right:7px solid transparent;
+    border-top:7px solid white;
+}
+#coordPopup .coord-label{font-size:0.62rem;color:var(--text3);margin-bottom:1px;}
+#coordPopup .coord-val{font-size:0.85rem;font-weight:700;color:var(--accent);}
+#coordPopup .coord-row{border-bottom:1px solid #f0f3f6;padding:5px 0;}
+#coordPopup .coord-row:last-child{border-bottom:none;}
+#coordPopup .popup-close {
+    position:absolute;top:-7px;right:-7px;width:20px;height:20px;
+    border-radius:50%;background:white;border:1px solid #ddd;
+    font-size:0.7rem;cursor:pointer;color:#999;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.12);z-index:1;
+}
+#coordPopup .popup-close:hover{background:#f5f5f5;color:#333;}
+
+/* ===== 土壤剖面弹窗 ===== */
+#soilPopup {
+    position:absolute;z-index:2001;pointer-events:auto;
+    filter:drop-shadow(0 10px 28px rgba(0,0,0,0.3));
+    opacity:0;transform:translateY(5px);transition:opacity 0.25s,transform 0.25s;
+}
+#soilPopup.show{opacity:1;transform:translateY(0);}
+#soilPopup .soil-popup-body {
+    background:linear-gradient(160deg,#f0f7f0 0%,#e8f4e8 40%,#f5faf5 100%);
+    border-radius:16px;padding:14px 16px;
+    font-size:0.74rem;color:#2d4a2d;line-height:1.6;
+    box-shadow:0 4px 20px rgba(0,0,0,0.1);
+    min-width:210px;max-width:260px;position:relative;
+    border:2px solid #a3c9a3;
+}
+#soilPopup .soil-popup-arrow {
+    width:0;height:0;margin:0 auto;
+    border-left:8px solid transparent;border-right:8px solid transparent;
+    border-top:8px solid #a3c9a3;
+}
+#soilPopup .soil-popup-close {
+    position:absolute;top:-8px;right:-8px;width:20px;height:20px;
+    border-radius:50%;background:white;border:1.5px solid #a3c9a3;
+    font-size:0.7rem;cursor:pointer;color:#669966;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);z-index:1;transition:all 0.2s;
+}
+#soilPopup .soil-popup-close:hover{background:#e8f4e8;color:#2d4a2d;}
+#soilPopup .soil-poptitle{font-size:0.82rem;font-weight:700;color:#2d5a2d;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+#soilPopup .soil-poprow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #d4e8d4;font-size:0.7rem;}
+#soilPopup .soil-poprow:last-child{border-bottom:none;}
+#soilPopup .soil-poprow .slbl{color:#669966;font-weight:500;}
+#soilPopup .soil-poprow .sval{color:#2d4a2d;font-weight:650;text-align:right;}
+
+/* ===== 测量提示条 ===== */
+.measure-tip {
+    position:absolute;top:78px;left:50%;transform:translateX(-50%);
+    background:var(--blue-800);color:white;padding:10px 26px;
+    border-radius:28px;font-size:0.82rem;z-index:1001;display:none;pointer-events:none;
+    box-shadow:0 8px 28px rgba(5,20,40,0.3);letter-spacing:0.3px;font-weight:500;
+}
+
+/* ===== 模态框 ===== */
+.modal-overlay {
+    position:fixed;inset:0;z-index:10000;
+    background:rgba(8,20,35,0.65);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:center;
+}
+.modal-overlay.hidden{display:none;}
+.modal-panel {
+    background:white;border-radius:22px;width:740px;max-width:94vw;
+    max-height:84vh;overflow-y:auto;
+    box-shadow:0 40px 70px -20px rgba(5,20,40,0.4),0 0 0 1px rgba(0,0,0,0.05);
+    padding:32px 28px;animation:cardIn 0.35s cubic-bezier(0.22,0.85,0.35,1.05);
+}
+.modal-panel.narrow{width:420px;}
+.modal-panel h2{font-size:1.15rem;font-weight:700;color:var(--blue-800);margin-bottom:22px;display:flex;align-items:center;gap:10px;}
+.close-x {
+    position:absolute;top:14px;right:16px;background:none;border:none;
+    font-size:1.4rem;cursor:pointer;color:var(--text3);padding:6px;line-height:1;
+    transition:all 0.2s;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+}
+.close-x:hover{color:var(--blue-800);background:#f0f3f6;}
+
+/* 管理面板 */
+.tabs{display:flex;gap:5px;margin-bottom:20px;background:#f4f7fa;padding:5px;border-radius:14px;width:fit-content;}
+.tab-btn {
+    padding:8px 20px;border:none;border-radius:11px;background:transparent;
+    cursor:pointer;font-size:0.84rem;font-weight:550;color:var(--text2);
+    transition:all 0.25s;font-family:inherit;
+}
+.tab-btn.active{background:white;color:var(--blue-800);font-weight:650;box-shadow:0 2px 6px rgba(0,0,0,0.06);}
+.table-wrap{overflow-x:auto;border-radius:14px;border:1px solid #eef2f7;}
+table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+thead th{text-align:left;padding:10px 12px;font-size:0.72rem;font-weight:650;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #eef2f7;background:#fafbfc;}
+tbody td{padding:10px 12px;border-bottom:1px solid #f4f6f9;color:var(--text);}
+tbody tr:hover{background:#f8fafc;}
+.badge{display:inline-block;padding:3px 10px;border-radius:18px;font-size:0.7rem;font-weight:550;margin:1px 2px;}
+.badge.admin{background:#fef3c7;color:#92400e;}.badge.user{background:#e0f2fe;color:#075985;}
+.badge.active{background:#dcfce7;color:#166534;}.badge.locked{background:#fee2e2;color:#991b1b;}
+.btn-sm{padding:4px 12px;border-radius:15px;font-size:0.72rem;font-weight:550;cursor:pointer;border:none;transition:all 0.25s;font-family:inherit;display:inline-flex;align-items:center;gap:4px;}
+.btn-sm.pr{background:var(--accent);color:white;box-shadow:0 3px 8px rgba(14,75,122,0.18);}.btn-sm.pr:hover{background:var(--accent-dark);box-shadow:0 5px 14px rgba(14,75,122,0.25);}
+.btn-sm.dg{background:#fee2e2;color:#b91c1c;margin-left:4px;}.btn-sm.dg:hover{background:#fecaca;}
+.btn-sm.ol{background:transparent;border:1.5px solid #dce5ec;color:var(--text2);}.btn-sm.ol:hover{background:#f0f4f8;}
+.toolbar-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.inline-form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px;background:#f8fafc;border-radius:14px;margin-top:12px;border:1px solid #eef2f7;}
+.inline-form input,.inline-form select{padding:7px 11px;border:2px solid #e1e8f0;border-radius:10px;font-size:0.8rem;font-family:inherit;outline:none;background:white;transition:all 0.2s;}
+.inline-form input:focus,.inline-form select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,109,170,0.06);}
+.profile-card{display:flex;gap:24px;align-items:flex-start;}
+.profile-avatar {
+    width:80px;height:80px;border-radius:20px;
+    background:linear-gradient(145deg,var(--accent),var(--accent-dark));
+    color:white;display:flex;align-items:center;justify-content:center;
+    font-size:2rem;font-weight:700;flex-shrink:0;
+    box-shadow:0 12px 24px -8px rgba(14,75,122,0.35);
+}
+.profile-info{flex:1;}
+.profile-info .ir{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f3f6;font-size:0.85rem;}
+.profile-info .ir .lbl{color:var(--text2);font-weight:530;}
+.profile-info .ir .val{color:var(--blue-800);font-weight:650;}
+
+/* 分析结果 */
+.analysis-result {
+    background:#ecf3f9;border-radius:12px;padding:12px;margin-top:8px;
+    border:2px solid #c5d8ea;max-height:190px;overflow-y:auto;
+}
+.analysis-result h5{font-size:0.8rem;color:var(--blue-800);margin-bottom:8px;font-weight:650;}
+.analysis-result .stat-row{display:flex;justify-content:space-between;padding:4px 0;color:var(--text2);font-size:0.74rem;}
+
+.toast-pop {
+    position:fixed;bottom:28px;right:28px;z-index:20000;
+    padding:11px 24px;border-radius:24px;font-size:0.8rem;font-weight:550;
+    color:white;opacity:0;transition:opacity 0.35s;pointer-events:none;
+    box-shadow:0 10px 28px rgba(0,0,0,0.3);
+}
+.toast-pop.show{opacity:1;}.toast-pop.ok{background:#166534;}.toast-pop.err{background:#b91c1c;}
+
+/* OL控件 */
+.ol-zoom{top:76px;left:16px;}
+.ol-zoom button {
+    background:white;border-radius:10px;margin:5px 0;width:34px;height:34px;
+    font-weight:600;font-size:1.05rem;border:2px solid #d5dfe8;
+    box-shadow:0 3px 10px rgba(10,40,70,0.08);color:var(--blue-700);transition:all 0.2s;
+}
+.ol-zoom button:hover{background:white;color:var(--accent);border-color:var(--accent);box-shadow:0 4px 14px rgba(10,40,70,0.15);}
+
+/* 定位按钮 */
+#locateBtn {
+    position:absolute;top:164px;left:16px;z-index:999;
+    width:34px;height:34px;border-radius:10px;border:2px solid #d5dfe8;
+    background:white;color:var(--blue-700);cursor:pointer;
+    font-size:0.95rem;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 10px rgba(10,40,70,0.08);transition:all 0.2s;
+}
+#locateBtn:hover{color:var(--accent);border-color:var(--accent);box-shadow:0 4px 14px rgba(10,40,70,0.15);}
+#locateBtn.locating{color:var(--accent);border-color:var(--accent);animation:pulse 1.2s ease infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(26,109,170,0.4);}50%{box-shadow:0 0 0 10px rgba(26,109,170,0);}}
+
+.ol-scale-line{bottom:20px;left:16px;}
+.ol-scale-line-inner {
+    border:1px solid rgba(0,0,0,0.18);border-top:none;
+    background:white;color:var(--text);font-weight:550;padding:4px 10px;border-radius:0 0 8px 8px;font-size:10px;
+}
+
+#basemapMenu {
+    position:fixed;
+    background:white;border-radius:14px;
+    box-shadow:0 18px 35px -8px rgba(10,40,70,0.25),0 0 0 1px rgba(10,40,70,0.06);
+    z-index:1002;display:none;overflow:hidden auto;max-height:50vh;min-width:180px;
+    animation:slideDown 0.2s cubic-bezier(0.22,0.85,0.35,1.05);
+}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.basemap-option {
+    padding:12px 22px;cursor:pointer;display:flex;align-items:center;gap:10px;
+    font-size:0.84rem;font-weight:530;color:var(--text);transition:all 0.2s;
+    border-bottom:1px solid #eef2f8;
+}
+.basemap-option:last-child{border-bottom:none;}
+.basemap-option i{width:22px;color:var(--accent);}
+.basemap-option:hover{background:var(--blue-25);padding-left:26px;color:var(--accent-dark);}
+
+/* ===== 面板切换按钮(移动端) ===== */
+#panelToggleBtn {
+    display:none; position:absolute;top:76px;right:16px;z-index:1002;
+    width:36px;height:36px;border-radius:10px;border:2px solid #d5dfe8;
+    background:white;color:var(--blue-700);cursor:pointer;
+    font-size:1rem;align-items:center;justify-content:center;
+    box-shadow:0 3px 10px rgba(10,40,70,0.08);transition:all 0.2s;
+}
+#panelToggleBtn:hover{color:var(--accent);border-color:var(--accent);}
+
+/* ===== 移动端遮罩 ===== */
+#mobileOverlay {
+    display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.35);
+    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+}
+
+/* ===== 移动端适配 ===== */
+@media(max-width:780px){
+    /* 导航栏缩小 */
+    .navbar{padding:0 10px;height:50px;}
+    .logo-icon{width:30px;height:30px;border-radius:10px;font-size:0.9rem;}
+    .title-text h1{font-size:0.95rem;}
+    .title-text p{font-size:0.55rem;}
+    /* 隐藏部分导航按钮 */
+    .tool-btn.rst,.tool-btn.prf{display:none;}
+    .tool-btn{padding:5px 10px;font-size:0.7rem;gap:4px;border-radius:32px;}
+    .tool-btn i{font-size:0.7rem;}
+    .user-pill{font-size:0.7rem;padding:3px 10px;}
+    .user-pill .av{width:24px;height:24px;font-size:0.62rem;}
+    .btn-out{padding:4px 10px;font-size:0.65rem;}
+
+    /* 右侧面板改为抽屉式 */
+    .side-panel{
+        position:fixed;top:58px;right:0;bottom:0;width:320px;z-index:1000;
+        max-height:none;overflow-y:auto;
+        background:linear-gradient(180deg,#e6eff7 0%,#dce7f1 100%);
+        padding:8px;gap:8px;
+        transform:translateX(100%);
+        transition:transform 0.3s cubic-bezier(0.22,0.85,0.35,1.05);
+        box-shadow:-4px 0 24px rgba(0,0,0,0.15);
+    }
+    .side-panel.open{transform:translateX(0);}
+    #panelToggleBtn{display:flex;}
+    #mobileOverlay{display:none;}
+    #mobileOverlay.show{display:block;}
+
+    .panel-module{border-radius:14px;flex-shrink:0;}
+    .module-header{padding:12px 14px;}
+    .module-header h3{font-size:0.84rem;}
+    .module-body{padding:10px 14px 14px;}
+    .layer-btn{padding:9px 14px;font-size:0.8rem;}
+    .tool-chip{padding:9px 10px;font-size:0.73rem;}
+    .tool-chip i{font-size:0.8rem;}
+
+    /* 地图控件 */
+    .ol-zoom{top:62px;left:8px;}
+    .ol-zoom button{width:30px;height:30px;font-size:0.9rem;border-radius:8px;}
+    #locateBtn{top:140px;left:8px;width:30px;height:30px;font-size:0.8rem;border-radius:8px;}
+    #basemapMenu{max-height:40vh;}
+
+    /* 模态框全屏 */
+    .modal-panel{border-radius:18px;width:96vw;max-height:90vh;padding:22px 16px;}
+    .modal-panel.narrow{width:94vw;}
+
+    /* Toast & 状态栏 */
+    .status-toast{bottom:12px;font-size:0.65rem;padding:6px 14px;}
+    .toast-pop{bottom:16px;right:16px;font-size:0.72rem;padding:8px 18px;}
+    .measure-tip{top:62px;font-size:0.7rem;padding:7px 16px;}
+    .auth-card{width:360px;padding:32px 26px;}
+    .auth-card h2{font-size:1.15rem;}
+}
+
+/* ===== 小屏手机 ===== */
+@media(max-width:480px){
+    .side-panel{width:290px;top:54px;padding:6px;gap:6px;}
+    .navbar{height:46px;padding:0 8px;}
+    .title-text h1{font-size:0.82rem;}
+    .title-text p{display:none;}
+    .logo-icon{width:26px;height:26px;font-size:0.75rem;border-radius:8px;}
+    .tool-btn{padding:4px 8px;font-size:0.65rem;gap:3px;border-radius:28px;}
+    .tool-btn.screenshot-btn-mob{display:flex;}
+    .user-pill{font-size:0.65rem;padding:2px 8px;}
+    .user-pill .av{width:22px;height:22px;font-size:0.58rem;}
+    .btn-out{padding:3px 8px;font-size:0.6rem;}
+    .btn-ico{width:26px;height:26px;font-size:0.65rem;}
+
+    .panel-module{border-radius:12px;}
+    .module-header{padding:10px 12px;}
+    .module-header h3{font-size:0.78rem;}
+    .module-body{padding:8px 12px 12px;}
+    .layer-btn{padding:8px 12px;font-size:0.76rem;border-radius:10px;}
+    .layer-btns{gap:6px;margin-bottom:10px;}
+    .tool-grid{gap:5px;}
+    .tool-chip{padding:8px 8px;font-size:0.7rem;border-radius:10px;}
+    .tool-chip i{font-size:0.75rem;}
+    .opacity-row label{font-size:0.7rem;}
+    .opacity-row .op-val{font-size:0.72rem;}
+    .legend-row{font-size:0.72rem;}
+    .legend-label{font-size:0.72rem;}
+    .legend-note{font-size:0.65rem;}
+    .result-box{max-height:120px;}
+    .result-box .res-item .res-title{font-size:0.72rem;}
+    .result-box .res-item .res-detail{font-size:0.68rem;}
+    .section-label{font-size:0.68rem;}
+
+    .ol-zoom{top:56px;left:4px;}
+    .ol-zoom button{width:28px;height:28px;font-size:0.8rem;border-radius:7px;margin:4px 0;}
+    #locateBtn{top:126px;left:4px;width:28px;height:28px;font-size:0.75rem;border-radius:7px;}
+    #panelToggleBtn{top:62px;right:8px;width:32px;height:32px;font-size:0.9rem;border-radius:8px;}
+
+    #basemapMenu{max-height:35vh;}
+    .basemap-option{padding:10px 16px;font-size:0.76rem;}
+
+    .status-toast{bottom:10px;font-size:0.6rem;padding:5px 10px;border-radius:32px;}
+    .toast-pop{bottom:12px;right:12px;font-size:0.68rem;padding:7px 14px;border-radius:18px;}
+    .measure-tip{top:54px;font-size:0.66rem;padding:6px 12px;}
+    .modal-panel{border-radius:14px;padding:18px 12px;}
+    .auth-card{width:92vw;padding:28px 20px;border-radius:22px;}
+    .auth-card h2{font-size:1.05rem;}
+    .auth-card .sub{font-size:0.7rem;margin-bottom:20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== 登录遮罩 ========== -->
+<div class="auth-overlay hidden" id="authOverlay">
+<div class="auth-card">
+<div class="alogo"><i class="fas fa-leaf"></i></div><h2>福建省土壤专题地图</h2><p class="sub">智慧农业 · 生态图鉴</p>
+<div class="msg-box" id="authMsg"></div>
+<form id="loginForm" autocomplete="off">
+<div class="fld"><label>用户名</label><input type="text" id="loginUser" placeholder="请输入用户名" required autocomplete="off"></div>
+<div class="fld"><label>密码</label><input type="password" id="loginPass" placeholder="请输入密码" required autocomplete="off"></div>
+<button type="submit" class="btn-sub"><i class="fas fa-sign-in-alt"></i> 登 录</button>
+</form>
+<form id="registerForm" style="display:none;" autocomplete="off">
+<div class="fld"><label>用户名</label><input type="text" id="regUser" placeholder="请输入用户名" required autocomplete="off"></div>
+<div class="fld"><label>密码</label><input type="password" id="regPass" placeholder="至少6位" required minlength="6" autocomplete="off"></div>
+<div class="fld"><label>邮箱</label><input type="email" id="regEmail" placeholder="选填" autocomplete="off"></div>
+<div class="fld"><label>昵称</label><input type="text" id="regNick" placeholder="选填" autocomplete="off"></div>
+<button type="submit" class="btn-sub"><i class="fas fa-user-plus"></i> 注 册</button>
+</form>
+<p class="tog" id="toggleText"><span onclick="toggleAuthForm()">没有账号？点击注册</span></p>
+</div></div>
+
+<!-- ========== 导航栏 ========== -->
+<div class="navbar">
+<div class="logo-area"><div class="logo-icon"><i class="fas fa-leaf"></i></div><div class="title-text"><h1>福建省土壤专题地图</h1><p>智慧农业 · 生态图鉴</p></div></div>
+<div class="toolbar">
+<button class="tool-btn bm" id="basemapBtn"><i class="fas fa-map"></i> 底图</button>
+<button class="tool-btn rst" id="resetViewBtn"><i class="fas fa-home"></i> 复位</button>
+<button class="tool-btn" id="screenshotBtn"><i class="fas fa-camera"></i> 截图</button>
+<button class="tool-btn adm" id="adminBtn" onclick="openAdminPanel()"><i class="fas fa-users-cog"></i> 管理</button>
+</div>
+<div class="user-area">
+<div class="user-pill" id="userPill"></div>
+<button class="tool-btn prf" id="profileBtn" onclick="openProfilePanel()"><i class="fas fa-id-card"></i> 我的</button>
+<button class="btn-out" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> 登出</button>
+</div></div>
+
+<div id="basemapMenu">
+<div class="basemap-option" data-type="gaode"><i class="fas fa-location-dot"></i> 高德中文地图</div>
+<div class="basemap-option" data-type="satellite"><i class="fas fa-satellite"></i> 高德卫星影像</div>
+<div class="basemap-option" data-type="esriStreet"><i class="fas fa-map-marked-alt"></i> ESRI 街道图</div>
+<div class="basemap-option" data-type="esriTopo"><i class="fas fa-mountain"></i> ESRI 地形图</div>
+<div class="basemap-option" data-type="clean"><i class="fas fa-draw-polygon"></i> 简洁浅色 (CartoDB)</div>
+</div>
+
+<!-- ========== 右侧三模块面板 ========== -->
+<div class="side-panel" id="sidePanel">
+
+<!-- 模块1: 专题地图 -->
+<div class="panel-module" id="modTheme">
+<div class="module-header" onclick="toggleModule('modTheme')">
+<h3><i class="fas fa-layer-group"></i> 专题地图</h3>
+<i class="fas fa-chevron-down collapse-icon"></i>
+</div>
+<div class="module-body" id="modThemeBody">
+<div class="layer-btns">
+<button id="btnGroup1" class="layer-btn active"><i class="fas fa-seedling"></i>有机质 + 县区</button>
+<button id="btnGroup2" class="layer-btn"><i class="fas fa-mountain"></i>土属 + 县区</button>
+<button id="btnGroup3" class="layer-btn"><i class="fas fa-cloud-rain"></i>降水量 + 县区</button>
+</div>
+<div class="opacity-row">
+<label><i class="fas fa-eye"></i> 透明度</label>
+<input type="range" id="opacitySlider" min="0" max="100" value="100" style="--p:100%;" oninput="changeOpacity(this.value)">
+<span class="op-val" id="opacityVal">100%</span>
+</div>
+</div></div>
+
+<!-- 模块2: 图例 -->
+<div class="panel-module" id="modLegend">
+<div class="module-header" onclick="toggleModule('modLegend')">
+<h3><i class="fas fa-palette"></i> 图例</h3>
+<i class="fas fa-chevron-down collapse-icon"></i>
+</div>
+<div class="module-body" id="modLegendBody">
+<div class="legend-list" id="legendContainer"></div>
+</div></div>
+
+<!-- 模块3: 工具与设置 -->
+<div class="panel-module" id="modTools">
+<div class="module-header" onclick="toggleModule('modTools')">
+<h3><i class="fas fa-toolbox"></i> 工具与设置</h3>
+<i class="fas fa-chevron-down collapse-icon"></i>
+</div>
+<div class="module-body" id="modToolsBody">
+
+<!-- 工具网格 -->
+<div id="toolGrid">
+<div class="tool-grid">
+<button class="tool-chip" onclick="activateTool('identify')"><i class="fas fa-info-circle"></i> 属性查询</button>
+<button class="tool-chip" onclick="activateTool('boxselect')"><i class="fas fa-vector-square"></i> 拉框统计</button>
+<button class="tool-chip" onclick="activateTool('buffer')"><i class="fas fa-bullseye"></i> 缓冲区分析</button>
+<button class="tool-chip" onclick="activateTool('soilprofile')"><i class="fas fa-layer-group"></i> 土壤剖面</button>
+<button class="tool-chip" onclick="activateTool('coordpick')"><i class="fas fa-map-pin"></i> 坐标拾取</button>
+<button class="tool-chip" onclick="activateTool('measureDist')"><i class="fas fa-ruler"></i> 测距</button>
+<button class="tool-chip" onclick="activateTool('measureArea')"><i class="fas fa-draw-polygon"></i> 测面</button>
+<button class="tool-chip" onclick="clearAllDrawings()"><i class="fas fa-eraser"></i> 清除图形</button>
+</div>
+</div>
+
+<!-- 工具面板(激活后显示) -->
+<div id="toolPanel" style="display:none;">
+<button onclick="backToToolGrid()" style="display:flex;align-items:center;gap:4px;background:none;border:none;color:var(--accent);font-size:0.78rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:8px;font-family:inherit;"><i class="fas fa-arrow-left"></i> 返回工具列表</button>
+<div id="toolPanelContent"></div>
+<div class="section-label" style="margin-top:8px;"><i class="fas fa-search"></i> 当前查询结果</div>
+<div class="result-box" id="toolResultBox"><div class="empty">执行工具后将在此显示结果</div></div>
+</div>
+
+<!-- 查询历史(默认展开) -->
+<div class="section-label" onclick="toggleHistory()" style="cursor:pointer;user-select:none;">
+<i class="fas fa-history"></i> 查询历史
+<i class="fas fa-chevron-down" id="historyChevron" style="font-size:0.6rem;color:var(--text3);"></i>
+<span style="font-weight:400;font-size:0.65rem;color:var(--text3);" id="historyCount"></span>
+<button class="btn-mini clear" onclick="event.stopPropagation();clearHistory();" style="margin-left:auto;"><i class="fas fa-trash"></i> 清空</button>
+</div>
+<div class="result-box" id="historyBox" style="max-height:130px;">
+<div class="empty">暂无历史记录</div>
+</div>
+</div></div>
+
+</div><!-- /side-panel -->
+
+<div id="map"></div>
+
+<!-- 坐标弹窗 -->
+<div id="coordPopup">
+    <div class="popup-body">
+        <button class="popup-close" onclick="closePopup()">&times;</button>
+        <div id="popupContent"></div>
+    </div>
+    <div class="popup-arrow-wrap"></div>
+</div>
+
+<!-- 土壤剖面弹窗 -->
+<div id="soilPopup">
+    <div class="soil-popup-body">
+        <button class="soil-popup-close" onclick="closeSoilPopup()">&times;</button>
+        <div id="soilPopupContent"></div>
+    </div>
+    <div class="soil-popup-arrow"></div>
+</div>
+
+<!-- 定位按钮 -->
+<button id="locateBtn" title="定位到当前位置" onclick="locateMe()"><i class="fas fa-location-crosshairs"></i></button>
+
+<!-- 面板切换按钮(移动端) -->
+<button id="panelToggleBtn" title="工具面板" onclick="toggleMobilePanel()"><i class="fas fa-sliders-h"></i></button>
+
+<!-- 移动端遮罩 -->
+<div id="mobileOverlay" onclick="closeMobilePanel()"></div>
+
+<div class="status-toast" id="statusMsg">🌍 简洁无文字 | 有机质专题</div>
+<div class="measure-tip" id="measureTip">单击继续绘制，双击完成</div>
+
+<!-- ========== 模态框（个人信息/管理/修改密码） ========== -->
+<div class="modal-overlay hidden" id="profileOverlay">
+<div class="modal-panel narrow" style="position:relative;">
+<button class="close-x" onclick="closeProfilePanel()">&times;</button>
+<h2><i class="fas fa-id-card"></i> 个人信息</h2>
+<div class="profile-card"><div class="profile-avatar" id="profileAvatar">A</div><div class="profile-info" id="profileInfo"></div></div>
+</div></div>
+
+<div class="modal-overlay hidden" id="adminOverlay">
+<div class="modal-panel" style="position:relative;">
+<button class="close-x" onclick="closeAdminPanel()">&times;</button>
+<h2><i class="fas fa-users-cog"></i> 用户管理</h2>
+<div class="tabs"><button class="tab-btn active" onclick="switchAdminTab('users')">用户列表</button><button class="tab-btn" onclick="switchAdminTab('roles')">角色与权限</button></div>
+<div id="adminTabUsers">
+<div class="toolbar-row"><span style="font-weight:600;color:#1f4662;">共 <span id="adminUserCount">0</span> 个用户</span><button class="btn-sm pr" onclick="showCreateUserForm()"><i class="fas fa-plus"></i> 新建用户</button></div>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>用户名</th><th>昵称</th><th>邮箱</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="adminUserTbody"></tbody></table></div>
+<div id="userEditForm" style="display:none;" class="inline-form">
+<input type="hidden" id="editUserId"><input type="text" id="editUsername" placeholder="用户名" style="width:90px;"><input type="password" id="editPassword" placeholder="密码" style="width:100px;"><input type="email" id="editEmail" placeholder="邮箱" style="width:120px;"><input type="text" id="editNickname" placeholder="昵称" style="width:80px;"><select id="editLocked"><option value="false">正常</option><option value="true">锁定</option></select><span style="font-size:0.7rem;color:#6b8ca3;">角色:</span><span id="editRoleChecks"></span><button class="btn-sm pr" onclick="saveUser()">保存</button><button class="btn-sm ol" onclick="cancelUserEdit()">取消</button></div></div>
+<div id="adminTabRoles" style="display:none;">
+<div style="display:flex;gap:16px;"><div style="flex:1;">
+<div class="toolbar-row"><span style="font-weight:600;color:#1f4662;">角色列表</span><button class="btn-sm pr" onclick="showCreateRoleForm()"><i class="fas fa-plus"></i> 新建</button></div>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>角色</th><th>描述</th><th>权限</th><th>操作</th></tr></thead><tbody id="adminRoleTbody"></tbody></table></div>
+<div id="roleEditForm" style="display:none;" class="inline-form"><input type="text" id="newRoleName" placeholder="角色名" style="width:90px;"><input type="text" id="newRoleDesc" placeholder="描述" style="width:130px;"><span style="font-size:0.68rem;">权限:</span><span id="newRolePermChecks"></span><button class="btn-sm pr" onclick="saveRole()">保存</button><button class="btn-sm ol" onclick="cancelRoleEdit()">取消</button></div>
+</div><div style="width:200px;border-left:1px solid #eef2f7;padding-left:16px;"><h4 style="font-weight:600;color:#1f4662;margin-bottom:10px;font-size:0.8rem;">系统权限</h4><div id="permList" style="display:flex;flex-direction:column;gap:6px;"></div></div></div></div>
+</div></div>
+
+<div class="modal-overlay hidden" id="changePwdOverlay">
+<div class="modal-panel narrow" style="position:relative;">
+<button class="close-x" onclick="closeChangePassword()">&times;</button>
+<h2><i class="fas fa-key"></i> 修改密码</h2><div class="msg-box" id="pwdMsg"></div>
+<form id="changePwdForm" autocomplete="off">
+<div class="fld"><label>原密码</label><input type="password" id="oldPwd" required autocomplete="off"></div>
+<div class="fld"><label>新密码</label><input type="password" id="newPwd" required minlength="6" autocomplete="off"></div>
+<div class="fld"><label>确认新密码</label><input type="password" id="confirmPwd" required minlength="6" autocomplete="off"></div>
+<button type="submit" class="btn-sub">确认修改</button>
+<button type="button" class="btn-sub" style="background:#8aa3b5;margin-top:6px;" onclick="closeChangePassword()">取消</button>
+</form></div></div>
+
+<div class="toast-pop" id="toastPop"></div>
+
+<script>
+// ============================================================
+//  后端API
+// ============================================================
+const API_BASE='http://10.93.102.198:8081/api';
+const API={login:API_BASE+'/login',register:API_BASE+'/register',soilQuery:API_BASE+'/soil/query',boxStat:API_BASE+'/soil/stat/organic',bufferStat:API_BASE+'/soil/stat/buffer',soilInfo:API_BASE+'/soil/info'};
+const BUFFER_FIELDS=[{label:'年降水量 (mm)',value:'年降水量',type:'number'},{label:'有机质 (g/kg)',value:'有机质',type:'number'},{label:'pH值 (2016年)',value:'16ph',type:'number'},{label:'土壤类型',value:'省土属名称',type:'text'}];
+
+// ============================================================
+//  数据层（本地兜底）
+// ============================================================
+const K_USERS='rxy_users',K_ROLES='rxy_roles',K_PERMS='rxy_perms',K_SESSION='rxy_session';
+const DEFAULT_PERMS=[{id:'p1',name:'user:view',desc:'查看所有用户信息'},{id:'p2',name:'user:manage',desc:'创建/编辑/删除用户'},{id:'p3',name:'role:manage',desc:'管理角色和权限'}];
+const DEFAULT_ROLES=[{id:'r1',name:'admin',desc:'系统管理员，拥有全部权限',perms:['p1','p2','p3']},{id:'r2',name:'user',desc:'普通用户，可查看地图和个人信息',perms:[]}];
+function _r(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f;}catch(e){return f;}}
+function _w(k,v){localStorage.setItem(k,JSON.stringify(v));}
+async function _sha256(msg){const b=new TextEncoder().encode(msg);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+function allUsers(){return _r(K_USERS,[]);}
+function saveUsers(a){_w(K_USERS,a);}
+function fu(id){return allUsers().find(u=>u.id===id);}
+function fubyname(un){return allUsers().find(u=>u.username===un);}
+async function createUser(un,pw,em,nn,roles){
+    const salt=crypto.randomUUID?crypto.randomUUID():'s'+Date.now()+Math.random();
+    const hash=await _sha256(pw+salt);const now=new Date().toISOString();
+    const u={id:'u'+Date.now(),username:un,password:hash,salt,email:em||'',nickname:nn||un,roles:roles||['r2'],locked:false,createdAt:now,updatedAt:now};
+    const a=allUsers();a.push(u);saveUsers(a);return u;
+}
+async function updateUser(id,upd){
+    const a=allUsers();const i=a.findIndex(u=>u.id===id);if(i<0)throw new Error('用户不存在');
+    if(upd.password){a[i].salt=crypto.randomUUID?crypto.randomUUID():'s'+Date.now();a[i].password=await _sha256(upd.password+a[i].salt);}
+    if(upd.email!==undefined)a[i].email=upd.email;if(upd.nickname!==undefined)a[i].nickname=upd.nickname;
+    if(upd.locked!==undefined)a[i].locked=upd.locked;if(upd.roles!==undefined)a[i].roles=upd.roles;
+    a[i].updatedAt=new Date().toISOString();saveUsers(a);return a[i];
+}
+function deleteUser(id){saveUsers(allUsers().filter(u=>u.id!==id));}
+async function doLogin(un,pw){
+    const u=fubyname(un);if(!u)throw new Error('用户名或密码错误');if(u.locked)throw new Error('账号已被锁定');
+    const h=await _sha256(pw+u.salt);if(h!==u.password)throw new Error('用户名或密码错误');
+    sessionStorage.setItem(K_SESSION,JSON.stringify({userId:u.id,at:Date.now()}));return u;
+}
+function doLogout(){sessionStorage.removeItem(K_SESSION);location.reload();}
+function curSession(){try{const s=sessionStorage.getItem(K_SESSION);return s?JSON.parse(s):null;}catch(e){return null;}}
+function curUser(){const s=curSession();if(!s)return null;if(s.user)return s.user;const u=fu(s.userId);if(!u){sessionStorage.removeItem(K_SESSION);return null;}return u;}
+function isAdmin(u){return u&&u.roles&&u.roles.includes('r1');}
+function allRoles(){return _r(K_ROLES,DEFAULT_ROLES);}function saveRoles(a){_w(K_ROLES,a);}
+function allPerms(){return _r(K_PERMS,DEFAULT_PERMS);}
+function rn(id){const r=allRoles().find(r=>r.id===id);return r?r.name:id;}
+function pn(id){const p=allPerms().find(p=>p.id===id);return p?p.name:id;}
+async function initData(){
+    if(!localStorage.getItem(K_PERMS))_w(K_PERMS,DEFAULT_PERMS);if(!localStorage.getItem(K_ROLES))_w(K_ROLES,DEFAULT_ROLES);
+    if(allUsers().length===0){await createUser('admin','admin123','admin@rxy.com','系统管理员',['r1']);await createUser('user','123456','user@rxy.com','普通用户',['r2']);}
+}
+
+// ============================================================
+//  地图
+// ============================================================
+const GS='http://10.93.102.198:8080/geoserver',WS_='rxy';
+
+// 注册 EPSG:2436 投影 (Beijing 1954 / 3-degree Gauss-Kruger CM 117E)
+try{
+    proj4.defs('EPSG:2436','+proj=tmerc +lat_0=0 +lon_0=117 +k=1 +x_0=500000 +y_0=0 +ellps=krass +towgs84=15.8,-154.4,-82.3,0,0,0,0 +units=m +no_defs');
+    ol.proj.proj4.register(proj4);
+    console.log('EPSG:2436投影注册成功');
+}catch(e){console.warn('投影注册失败:',e.message);}
+const LG={g1:'0610_group_01',g2:'0610_group_02',g3:'0610_group_03'};
+const SMALL=[116.54892742166622,24.651258921410818,116.66729723132362,24.818102521367972];
+const FUJIAN=[115.8133048366213,23.487938270489902,120.8960398331418,28.33143493471903];
+const LEGENDS={
+    organic:{title:'有机质分级 (g/kg)',items:[{color:'#018571',label:'28.89 - 29.61'},{color:'#56b5a6',label:'29.61 - 30.77'},{color:'#a2d9d0',label:'30.77 - 31.76'},{color:'#e7f0ef',label:'31.76 - 32.62'},{color:'#e7d6ab',label:'32.62 - 33.32'},{color:'#cca25c',label:'33.32 - 34.06'},{color:'#a6611a',label:'34.06 - 35.34'}],note:'土壤采样点插值数据'},
+    soiltype:{title:'省土属分类',items:[{color:'#d7191c',label:'潮砂田'},{color:'#e54f35',label:'耕作砂泥土'},{color:'#f3854e',label:'红泥砂土'},{color:'#fdb56a',label:'红泥土'},{color:'#fed38c',label:'黄泥砂田'},{color:'#fff0af',label:'黄泥田'},{color:'#eff8b0',label:'灰泥田'},{color:'#ceea91',label:'灰砂泥田'},{color:'#aedc72',label:'冷烂田'},{color:'#80c75f',label:'青泥田'},{color:'#4dae50',label:'乌泥田'}],note:'福建省主要土属类型'},
+    precip:{title:'年降水量 (mm)',items:[{color:'#f7fbff',label:'1608 - 1610'},{color:'#dce9f6',label:'1610 - 1620'},{color:'#bed8ec',label:'1620 - 1620'},{color:'#8fc2de',label:'1620 - 1620'},{color:'#5ba3d0',label:'1620 - 1620'},{color:'#3282be',label:'1620 - 1630'},{color:'#115ca5',label:'1630 - 1630'},{color:'#08306b',label:'1630 - 1630'}],note:'多年平均降水量'}
+};
+
+let map,l1,l2,l3,basemaps,curBasemap='gaode',activeWmsLayer=null,currentTheme='organic';
+let drawSource=new ol.source.Vector(),drawLayer,activeTool=null,drawInteraction=null,measureCoords=[];
+let queryResultSource=new ol.source.Vector(),queryResultLayer;
+let _mapClickKey=null; // 追踪地图点击事件
+const queryHistory=[];
+
+function updateLegend(type){
+    currentTheme=type;
+    const c=document.getElementById('legendContainer');
+    const lg=LEGENDS[type];if(!lg)return;
+    let h=`<h4 style="font-size:0.78rem;font-weight:700;margin-bottom:8px;color:#17455f;"><i class="fas fa-chart-simple"></i> ${lg.title}</h4>`;
+    lg.items.forEach(i=>{h+=`<div class="legend-row"><div class="legend-swatch" style="background:${i.color};"></div><span class="legend-label">${i.label}</span></div>`;});
+    h+=`<div class="legend-note"><i class="fas fa-info-circle"></i> ${lg.note}</div>`;c.innerHTML=h;
+}
+function toMerc([a,b,c,d]){const x=ol.proj.fromLonLat([a,b]),y=ol.proj.fromLonLat([c,d]);return[x[0],x[1],y[0],y[1]];}
+function wmsLayer(grp){
+    return new ol.layer.Image({source:new ol.source.ImageWMS({url:`${GS}/${WS_}/wms`,params:{LAYERS:`${WS_}:${grp}`,FORMAT:'image/png',TRANSPARENT:true,VERSION:'1.1.1',SRS:'EPSG:3857'},serverType:'geoserver',ratio:1.5}),visible:false});
+}
+const BM_NAMES={gaode:'高德中文',satellite:'高德卫星',esriStreet:'ESRI街道',esriTopo:'ESRI地形',clean:'简洁浅色'};
+function switchBasemap(t){
+    if(t===curBasemap)return;map.removeLayer(basemaps[curBasemap]);map.getLayers().insertAt(0,basemaps[t]);curBasemap=t;
+    document.getElementById('statusMsg').innerHTML=`🗺️ ${BM_NAMES[t]||t} | ${curTheme()}`;
+}
+function curTheme(){const b=document.querySelector('.layer-btn.active');return b===btnG1?'有机质':b===btnG2?'土属':'降水量';}
+function resetView(){map.getView().fit(toMerc(FUJIAN),{padding:[40,40,40,40],duration:600});document.getElementById('statusMsg').innerHTML=`📍 福建省全境`;}
+
+function locateMe(){
+    const btn=document.getElementById('locateBtn');
+    if(!navigator.geolocation){toast('浏览器不支持定位功能','err');return;}
+    btn.classList.add('locating');
+    navigator.geolocation.getCurrentPosition(
+        pos=>{
+            btn.classList.remove('locating');
+            const coords=[pos.coords.longitude,pos.coords.latitude];
+            map.getView().animate({center:ol.proj.fromLonLat(coords),zoom:14,duration:800});
+            // 添加定位标记
+            const marker=new ol.Feature({geometry:new ol.geom.Point(ol.proj.fromLonLat(coords))});
+            marker.setStyle(new ol.style.Style({
+                image:new ol.style.Circle({radius:8,fill:new ol.style.Fill({color:'#1a6daa'}),stroke:new ol.style.Stroke({color:'white',width:3})})
+            }));
+            drawSource.addFeature(marker);
+            document.getElementById('statusMsg').innerHTML=`📍 已定位到: ${coords[0].toFixed(5)}°, ${coords[1].toFixed(5)}°`;
+            toast('已定位到当前位置','ok');
+        },
+        err=>{
+            btn.classList.remove('locating');
+            toast('定位失败: '+(err.message||'请检查位置权限'),'err');
+        },
+        {enableHighAccuracy:true,timeout:10000}
+    );
+}
+function switchLayer(lyr,btn,name,lt){
+    l1.setVisible(false);l2.setVisible(false);l3.setVisible(false);lyr.setVisible(true);activeWmsLayer=lyr;
+    document.querySelectorAll('.layer-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+    map.getView().fit(toMerc(SMALL),{padding:[80,80,80,80],duration:600});updateLegend(lt);
+    document.getElementById('statusMsg').innerHTML=`📍 ${name} | ${BM_NAMES[curBasemap]||curBasemap}`;
+}
+function changeOpacity(v){document.getElementById('opacityVal').textContent=v+'%';document.getElementById('opacitySlider').style.setProperty('--p',v+'%');if(activeWmsLayer)activeWmsLayer.setOpacity(parseInt(v)/100);else if(l1.getVisible())l1.setOpacity(parseInt(v)/100);}
+function toggleModule(modId){const h=document.querySelector(`#${modId} .module-header`);const b=document.getElementById(modId+'Body');h.classList.toggle('collapsed');b.classList.toggle('hidden');}
+function toggleMobilePanel(){const p=document.getElementById('sidePanel');const o=document.getElementById('mobileOverlay');p.classList.toggle('open');o.classList.toggle('show');}
+function closeMobilePanel(){const p=document.getElementById('sidePanel');const o=document.getElementById('mobileOverlay');p.classList.remove('open');o.classList.remove('show');}
+
+// ============================================================
+//  工具系统
+// ============================================================
+let btnG1,btnG2,btnG3;
+
+function deactivateAllTools(){
+    if(drawInteraction){map.removeInteraction(drawInteraction);drawInteraction=null;}
+    if(_mapClickKey){ol.Observable.unByKey(_mapClickKey);_mapClickKey=null;}
+    activeTool=null;document.getElementById('measureTip').style.display='none';
+    document.body.style.cursor='';
+}
+
+function activateTool(tool){
+    deactivateAllTools();
+    activeTool=tool;
+    document.getElementById('toolGrid').style.display='none';
+    document.getElementById('toolPanel').style.display='block';
+    const panel=document.getElementById('toolPanelContent');
+
+    if(tool==='measureDist'){panel.innerHTML='<div class="section-label"><i class="fas fa-ruler"></i> 📏 测距</div><p style="font-size:0.72rem;color:var(--text2);">单击地图添加路径点，双击完成测量</p>';startMeasure('LineString','📏 测距：单击添加点，双击完成');}
+    else if(tool==='measureArea'){panel.innerHTML='<div class="section-label"><i class="fas fa-draw-polygon"></i> 📐 测面</div><p style="font-size:0.72rem;color:var(--text2);">单击地图添加顶点，双击闭合多边形</p>';startMeasure('Polygon','📐 测面：单击添加顶点，双击闭合');}
+    else if(tool==='identify'){startIdentify();}
+    else if(tool==='boxselect'){startBoxSelect();}
+    else if(tool==='buffer'){startBuffer();}
+    else if(tool==='soilprofile'){startSoilProfile();}
+    else if(tool==='coordpick'){startCoordPick();}
+}
+
+function backToToolGrid(){
+    deactivateAllTools();closePopup();closeSoilPopup();
+    document.getElementById('toolGrid').style.display='block';
+    document.getElementById('toolPanel').style.display='none';
+    document.getElementById('toolPanelContent').innerHTML='';
+}
+
+function toggleHistory(){
+    const box=document.getElementById('historyBox');
+    const chev=document.getElementById('historyChevron');
+    const show=box.style.display==='none'||!box.style.display;
+    box.style.display=show?'block':'none';
+    chev.style.transform=show?'rotate(0deg)':'rotate(-90deg)';
+}
+
+// ---- 测距/测面 ----
+function startMeasure(geomType,msg){
+    document.getElementById('measureTip').textContent=msg;document.getElementById('measureTip').style.display='block';
+    document.body.style.cursor='crosshair';
+    drawInteraction=new ol.interaction.Draw({source:drawSource,type:geomType,style:new ol.style.Style({stroke:new ol.style.Stroke({color:'#ff6b35',width:2.5,dash:[8,4]}),fill:new ol.style.Fill({color:'rgba(255,107,53,0.1)'}),image:new ol.style.Circle({radius:5,fill:new ol.style.Fill({color:'#ff6b35'}),stroke:new ol.style.Stroke({color:'white',width:2})})})});
+    drawInteraction.on('drawstart',()=>{drawSource.clear();});
+    drawInteraction.on('drawend',e=>{
+        const g=e.feature.getGeometry();let result='';
+        if(geomType==='LineString'){
+            const coords=g.getCoordinates();let total=0;
+            for(let i=1;i<coords.length;i++)total+=ol.sphere.getDistance(coords[i-1],coords[i]);
+            result=total>1000?`总距离：<strong>${(total/1000).toFixed(3)} km</strong>`:`总距离：<strong>${total.toFixed(2)} m</strong>`;
+            result+=`<br>分段数：${coords.length-1} | 节点数：${coords.length}`;
+        }else{
+            const coords=g.getCoordinates()[0];
+            const area=ol.sphere.getArea(g),perim=ol.sphere.getLength(new ol.geom.LineString(coords.concat([coords[0]])));
+            result=area>1e6?`面积：<strong>${(area/1e6).toFixed(3)} km²</strong>`:`面积：<strong>${area.toFixed(2)} m²</strong>`;
+            result+=`<br>周长：${perim>1000?(perim/1000).toFixed(3)+' km':perim.toFixed(2)+' m'} | 顶点：${coords.length-1}`;
+        }
+        addResult(geomType==='LineString'?'📏 测距结果':'📐 测面结果',result);
+        addHistory(geomType==='LineString'?'测距':'测面',result);
+        document.getElementById('measureTip').style.display='none';document.body.style.cursor='';
+        deactivateAllTools();
+    });
+    map.addInteraction(drawInteraction);
+}
+
+// ---- 属性查询 ----
+const ATTR_FIELDS=[
+    {label:'县名称',value:'县名称',type:'text'},
+    {label:'有机质 (g/kg)',value:'有机质',type:'number'},
+    {label:'土壤类型',value:'省土属名称',type:'text'},
+    {label:'年降水量 (mm)',value:'年降水量',type:'number'},
+    {label:'pH值 (2016年)',value:'16ph',type:'number'}
+];
+
+const SOIL_TYPE_OPTIONS=['潮砂田','耕作砂泥土','红泥砂土','红泥土','黄泥砂田','黄泥田','灰泥田','灰砂泥田','冷烂田','青泥田','乌泥田'];
+const COUNTY_OPTIONS=['永定县','上杭县','武平县','长汀县','连城县','漳平市','新罗区','永安市','大田县','尤溪县','沙县','将乐县','泰宁县','建宁县','宁化县','清流县','明溪县','三元区','梅列区','建瓯市','建阳区','武夷山市','浦城县','松溪县','政和县','邵武市','光泽县','顺昌县','延平区','福清市','长乐区','闽侯县','连江县','罗源县','闽清县','永泰县','平潭县','仙游县','荔城区','秀屿区','安溪县','永春县','德化县','南安市','晋江市','石狮市','惠安县','漳浦县','云霄县','诏安县','东山县','平和县','南靖县','华安县','长泰区','龙海区','福安市','福鼎市','霞浦县','柘荣县','寿宁县','周宁县','屏南县','古田县','蕉城区'];
+
+function startIdentify(){
+    deactivateAllTools();activeTool='identify';
+    let html=`<div class="section-label"><i class="fas fa-info-circle"></i> 🔍 属性查询</div>`;
+    html+=`<div style="margin-top:4px;">`;
+    html+=`<label style="font-size:0.72rem;color:var(--text2);">查询字段</label>`;
+    html+=`<select id="attrField" onchange="onFieldChange()" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;background:white;">`;
+    ATTR_FIELDS.forEach(f=>{html+=`<option value="${f.value}">${f.label}</option>`;});html+=`</select>`;
+
+    html+=`<label style="font-size:0.72rem;color:var(--text2);margin-top:6px;display:block;">操作符</label>`;
+    html+=`<select id="attrOp" onchange="onOpChange()" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;background:white;">`;
+    html+=`<option value="=">= (等于)</option><option value=">">> (大于)</option><option value="<">< (小于)</option><option value="BETWEEN">BETWEEN (区间)</option></select>`;
+
+    html+=`<label style="font-size:0.72rem;color:var(--text2);margin-top:6px;display:block;">值</label>`;
+    html+=`<div id="valueInputArea">`;
+    html+=`<input type="text" id="attrValue1" placeholder="输入查询值" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;">`;
+    html+=`</div>`;
+    html+=`<input type="text" id="attrValue2" placeholder="上限值 (BETWEEN)" style="width:100%;margin-top:4px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;display:none;">`;
+
+    html+=`<div style="display:flex;gap:6px;margin-top:8px;">`;
+    html+=`<button onclick="executeSoilQuery()" class="btn-mini act" style="flex:1;padding:8px;font-size:0.75rem;"><i class="fas fa-search"></i> 查询</button>`;
+    html+=`<button onclick="clearQueryResults()" class="btn-mini clear" style="flex:1;padding:8px;font-size:0.75rem;"><i class="fas fa-eraser"></i> 清除</button></div></div>`;
+    document.getElementById('toolPanelContent').innerHTML=html;
+    onFieldChange();
+}
+
+function onFieldChange(){
+    const f=document.getElementById('attrField').value;
+    const field=ATTR_FIELDS.find(ff=>ff.value===f);
+    const op=document.getElementById('attrOp');
+    if(field&&field.type==='text'){op.value='=';op.querySelectorAll('option').forEach(o=>o.disabled=o.value!=='=');}
+    else{op.querySelectorAll('option').forEach(o=>o.disabled=false);}
+    // 下拉选项
+    const via=document.getElementById('valueInputArea');
+    if(f==='省土属名称'||f==='县名称'){
+        const opts=f==='省土属名称'?SOIL_TYPE_OPTIONS:COUNTY_OPTIONS;
+        let s=`<select id="attrValue1" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;background:white;">`;
+        opts.forEach(t=>{s+=`<option value="${t}">${t}</option>`;});
+        s+='</select>';via.innerHTML=s;
+    }else{
+        via.innerHTML=`<input type="text" id="attrValue1" placeholder="输入查询值" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;">`;
+    }
+    onOpChange();
+}
+
+function onOpChange(){
+    const op=document.getElementById('attrOp').value;
+    document.getElementById('attrValue2').style.display=op==='BETWEEN'?'block':'none';
+    document.getElementById('attrValue1').placeholder=op==='BETWEEN'?'下限值':'输入查询值';
+}
+
+async function executeSoilQuery(){
+    const field=document.getElementById('attrField').value;
+    const op=document.getElementById('attrOp').value;
+    const v1=document.getElementById('attrValue1').value.trim();
+    const v2=document.getElementById('attrValue2').value.trim();
+    if(!v1){toast('请输入查询值','err');return;}
+    if(op==='BETWEEN'&&!v2){toast('BETWEEN需要输入上限值','err');return;}
+
+    const body={field,operator:op,value1:isNaN(v1)?v1:parseFloat(v1)};
+    if(op==='BETWEEN')body.value2=isNaN(v2)?v2:parseFloat(v2);
+
+    document.getElementById('toolResultBox').innerHTML='<div class="empty">⏳ 正在查询...</div>';
+    try{
+        const resp=await fetch(API.soilQuery,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const text=await resp.text();console.log('土壤查询响应:',text.substring(0,300));
+        let data;try{data=JSON.parse(text);}catch(e){document.getElementById('toolResultBox').innerHTML='<div class="empty">❌ 响应格式错误</div>';return;}
+        if(data.code!==0){document.getElementById('toolResultBox').innerHTML=`<div class="empty">❌ ${data.message||'查询失败'}</div>`;return;}
+
+        const features=(data.data&&data.data.features)||[];
+        const count=(data.data&&data.data.count)||features.length;
+        console.log(`收到${features.length}个要素, count=${count}`);
+
+        queryResultSource.clear();
+        if(features.length===0){document.getElementById('toolResultBox').innerHTML='<div class="empty">✅ 查询成功，但无匹配数据</div>';return;}
+
+        // 几何数据在 properties.geomgeojson 字段(JSON字符串)，非 geometry 字段
+        function tc(arr,d){if(d<=0)return arr.map(c=>ol.proj.transform([c[0],c[1]],'EPSG:2436','EPSG:3857'));return arr.map(a=>tc(a,d-1));}
+        features.forEach(f=>{
+            try{
+                const geomStr=f.geometry||(f.properties&&f.properties.geomgeojson);
+                if(!geomStr)return;
+                const g=typeof geomStr==='string'?JSON.parse(geomStr):geomStr;
+                if(!g||!g.coordinates)return;
+                const og=(g.type==='MultiPolygon')?new ol.geom.MultiPolygon(tc(g.coordinates,2)):(g.type==='Polygon')?new ol.geom.Polygon(tc(g.coordinates,1)):null;
+                if(og){const feat=new ol.Feature({geometry:og});feat.setProperties(f.properties||{});queryResultSource.addFeature(feat);}
+            }catch(e){}
+        });
+        console.log('图层要素:'+queryResultSource.getFeatures().length);
+        // 强制提层+缩放
+        map.getLayers().remove(queryResultLayer);map.getLayers().push(queryResultLayer);
+        const ext=queryResultSource.getExtent();console.log('范围:'+ext);
+        if(ext&&isFinite(ext[0]))map.getView().fit(ext,{padding:[60,60,60,60],duration:500,maxZoom:13});
+
+        // 显示结果摘要
+        let html=`<strong>✅ 查询结果</strong><br><span style="font-size:0.7rem;color:var(--text3);">共 <strong>${count}</strong> 条记录</span>`;
+        if(features.length>0){
+            html+=`<div class="res-item" style="margin-top:6px;"><div class="res-title">📋 属性列表 (前${Math.min(features.length,20)}条)</div><div class="res-detail" style="max-height:120px;overflow-y:auto;">`;
+            features.slice(0,20).forEach((f,i)=>{
+                const p=f.properties||{};
+                html+=`<div style="padding:3px 0;border-bottom:1px solid #eef2f7;"><strong>#${i+1}</strong> `;
+                Object.entries(p).slice(0,6).forEach(([k,v])=>{html+=`${k}:${v} `;});
+                if(Object.keys(p).length>6)html+='...';
+                html+=`</div>`;
+            });
+            if(features.length>20)html+=`<div style="color:var(--text3);font-size:0.65rem;padding:4px 0;">... 还有 ${features.length-20} 条</div>`;
+            html+=`</div></div>`;
+        }
+        addResultRaw(html);
+        addHistory('属性查询',`${field} ${op} ${v1}${v2?'~'+v2:''} | ${count}条`);
+        deactivateAllTools();
+    }catch(err){
+        document.getElementById('resultBox').innerHTML=`<div class="empty">❌ 查询失败: ${err.message}</div>`;
+        deactivateAllTools();
+    }
+}
+
+function clearQueryResults(){
+    queryResultSource.clear();
+    toast('高亮已清除','ok');
+}
+
+// ---- 拉框统计 ----
+function startBoxSelect(){
+    deactivateAllTools();activeTool='boxselect';
+    document.getElementById('toolPanelContent').innerHTML=`
+        <div class="section-label"><i class="fas fa-vector-square"></i> ⬜ 拉框统计</div>
+        <label style="font-size:0.72rem;color:var(--text2);margin-top:6px;display:block;">有机质阈值 (g/kg)</label>
+        <input type="number" id="boxThreshold" value="30" step="0.1" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;">
+        <p style="font-size:0.65rem;color:var(--text3);margin-top:4px;">设置阈值后，按住鼠标在地图上拖拽矩形范围</p>
+        <button onclick="cancelBoxSelect()" class="btn-mini clear" style="width:100%;margin-top:6px;padding:6px;font-size:0.7rem;">取消</button>`;
+    startBoxDrawing();
+}
+
+function cancelBoxSelect(){deactivateAllTools();backToToolGrid();}
+
+function startBoxDrawing(){
+    document.body.style.cursor='crosshair';
+    document.getElementById('measureTip').textContent='⬜ 按住拖拽绘制矩形框';document.getElementById('measureTip').style.display='block';
+    drawSource.clear();
+    const dragBox=new ol.interaction.DragBox({style:new ol.style.Style({stroke:new ol.style.Stroke({color:'#ff6b35',width:2,dash:[6,3]}),fill:new ol.style.Fill({color:'rgba(255,107,53,0.15)'})})});
+    map.addInteraction(dragBox);
+    drawInteraction=dragBox;
+    dragBox.on('boxend',async()=>{
+        map.removeInteraction(dragBox);drawInteraction=null;
+        document.getElementById('measureTip').style.display='none';document.body.style.cursor='';
+        const extent3857=dragBox.getGeometry().getExtent();
+        const boxFeat=new ol.Feature(dragBox.getGeometry());
+        boxFeat.setStyle(new ol.style.Style({stroke:new ol.style.Stroke({color:'#ff6b35',width:2,dash:[6,3]}),fill:new ol.style.Fill({color:'rgba(255,107,53,0.15)'})}));
+        drawSource.addFeature(boxFeat);
+
+        let extent2436;
+        try{extent2436=ol.proj.transformExtent(extent3857,'EPSG:3857','EPSG:2436');}
+        catch(err){addResult('📊 拉框统计','❌ 坐标转换失败: '+err.message);addHistory('拉框统计','坐标转换失败');deactivateAllTools();return;}
+
+        const threshold=parseFloat(document.getElementById('boxThreshold')?.value)||30;
+        document.getElementById('toolResultBox').innerHTML='<div class="empty">⏳ 正在统计...</div>';
+        try{
+            const resp=await fetch(API.boxStat,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minX:extent2436[0],minY:extent2436[1],maxX:extent2436[2],maxY:extent2436[3],threshold})});
+            const data=await resp.json();
+            if(data.code!==0){addResult('📊 拉框统计','❌ '+(data.message||'统计失败'));addHistory('拉框统计','失败');deactivateAllTools();return;}
+            const d=data.data||{};
+            if(d.count===0){addResult('📊 拉框统计',`⚠️ 该区域没有有机质 > ${threshold} g/kg 的地块`);addHistory('拉框统计','阈值'+threshold+' | 0条');}
+            else{addResult('📊 拉框统计',`📐 总面积：<strong>${d.totalArea.toFixed(2)} 公顷</strong><br>📊 地块数量：<strong>${d.count}</strong> 个<br>🎯 阈值：有机质 > ${d.threshold||threshold} g/kg`);addHistory('拉框统计',`${d.totalArea.toFixed(2)}公顷 | ${d.count}地块 | 阈值${threshold}`);}
+        }catch(err){addResult('📊 拉框统计','❌ 网络错误，请检查后端是否运行');addHistory('拉框统计','网络错误');}
+        deactivateAllTools();
+    });
+}
+
+// ---- 缓冲区分析 ----
+function startBuffer(){
+    deactivateAllTools();activeTool='buffer';
+    let html=`<div class="section-label"><i class="fas fa-draw-circle"></i> ◎ 缓冲区分析</div>`;
+    html+=`<label style="font-size:0.72rem;color:var(--text2);margin-top:4px;display:block;">统计字段</label>`;
+    html+=`<select id="bufField" onchange="onBufFieldChange()" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;background:white;">`;
+    BUFFER_FIELDS.forEach(f=>{html+=`<option value="${f.value}">${f.label}</option>`;});html+=`</select>`;
+
+    html+=`<label style="font-size:0.72rem;color:var(--text2);margin-top:6px;display:block;">操作符</label>`;
+    html+=`<select id="bufOp" onchange="onBufOpChange()" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;background:white;">`;
+    html+=`<option value="=">= (等于)</option><option value=">">> (大于)</option><option value="<">< (小于)</option><option value="BETWEEN">BETWEEN (区间)</option></select>`;
+
+    html+=`<label style="font-size:0.72rem;color:var(--text2);margin-top:6px;display:block;">阈值</label>`;
+    html+=`<input type="text" id="bufValue1" placeholder="输入阈值" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;">`;
+    html+=`<input type="text" id="bufValue2" placeholder="上限值 (BETWEEN)" style="width:100%;margin-top:4px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;display:none;">`;
+
+    html+=`<label style="font-size:0.72rem;color:var(--text2);margin-top:6px;display:block;">缓冲区半径 (米)</label>`;
+    html+=`<input type="number" id="bufRadius" value="1000" step="100" style="width:100%;margin-top:2px;padding:7px 10px;border:2px solid #c5d8ea;border-radius:10px;font-size:0.78rem;font-family:inherit;">`;
+    html+=`<p style="font-size:0.65rem;color:var(--text3);margin-top:4px;">设置参数后，点击地图选择中心点</p>`;
+    html+=`<button onclick="cancelBuffer()" class="btn-mini clear" style="width:100%;margin-top:6px;padding:6px;font-size:0.7rem;">取消</button>`;
+    document.getElementById('toolPanelContent').innerHTML=html;
+    startBufferClick();
+}
+
+function onBufFieldChange(){
+    const f=document.getElementById('bufField').value;
+    const bf=BUFFER_FIELDS.find(ff=>ff.value===f);
+    const op=document.getElementById('bufOp');
+    if(bf&&bf.type==='text'){op.value='=';op.querySelectorAll('option').forEach(o=>o.disabled=o.value!=='=');}
+    else{op.querySelectorAll('option').forEach(o=>o.disabled=false);}
+    onBufOpChange();
+}
+function onBufOpChange(){
+    document.getElementById('bufValue2').style.display=document.getElementById('bufOp').value==='BETWEEN'?'block':'none';
+}
+function cancelBuffer(){deactivateAllTools();backToToolGrid();}
+
+function startBufferClick(){
+    document.body.style.cursor='crosshair';
+    document.getElementById('measureTip').textContent='◎ 点击地图选择中心点';document.getElementById('measureTip').style.display='block';
+    map.once('singleclick',async e=>{
+        document.getElementById('measureTip').style.display='none';document.body.style.cursor='';
+        const radius=parseFloat(document.getElementById('bufRadius')?.value)||1000;
+        const field=document.getElementById('bufField').value;
+        const op=document.getElementById('bufOp').value;
+        const v1=document.getElementById('bufValue1').value.trim();
+        const v2=document.getElementById('bufValue2').value.trim();
+        if(!v1){toast('请输入阈值','err');cancelBuffer();return;}
+        if(op==='BETWEEN'&&!v2){toast('BETWEEN需要输入上限值','err');cancelBuffer();return;}
+
+        // 绘制缓冲区圆
+        const circleGeom=new ol.geom.Circle(e.coordinate,radius);
+        const feat=new ol.Feature(ol.geom.Polygon.fromCircle(circleGeom,64));
+        feat.setStyle(new ol.style.Style({stroke:new ol.style.Stroke({color:'#00b4d8',width:2.5}),fill:new ol.style.Fill({color:'rgba(0,180,216,0.15)'})}));
+        drawSource.addFeature(feat);
+
+        // 坐标转换
+        let c2436;try{c2436=ol.proj.transform(e.coordinate,'EPSG:3857','EPSG:2436');}catch(err){addResult('◎ 缓冲区分析','❌ 坐标转换失败');deactivateAllTools();return;}
+
+        const body={centerX:c2436[0],centerY:c2436[1],radius,field,operator:op,value1:isNaN(v1)?v1:parseFloat(v1)};
+        if(op==='BETWEEN')body.value2=isNaN(v2)?v2:parseFloat(v2);
+
+        document.getElementById('toolResultBox').innerHTML='<div class="empty">⏳ 正在统计...</div>';
+        try{
+            const resp=await fetch(API.bufferStat,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            const data=await resp.json();
+            if(data.code!==0){addResult('◎ 缓冲区分析','❌ '+(data.message||'统计失败'));addHistory('缓冲区分析','失败');deactivateAllTools();return;}
+            const d=data.data||{};
+            if(d.count===0){addResult('◎ 缓冲区分析',`⚠️ 缓冲区内没有符合条件的${field}地块`);addHistory('缓冲区分析',`半径${radius}m | 0条`);}
+            else{addResult('◎ 缓冲区分析',`📐 总面积：<strong>${d.totalArea.toFixed(2)} 公顷</strong><br>📊 地块数量：<strong>${d.count}</strong> 个<br>🎯 ${d.field||field} ${d.operator||op} ${d.value1||v1}${d.value2?'~'+d.value2:''}<br>📏 半径：${d.radius||radius} m`);addHistory('缓冲区分析',`${d.totalArea.toFixed(2)}公顷 | ${d.count}地块 | 半径${radius}m`);}
+        }catch(err){addResult('◎ 缓冲区分析','❌ 网络错误，请检查后端是否运行');addHistory('缓冲区分析','网络错误');}
+        deactivateAllTools();
+    });
+}
+
+// ---- 聚类分析 ----
+// ---- 土壤剖面 ----
+function startSoilProfile(){
+    document.getElementById('toolPanelContent').innerHTML=`
+        <div class="section-label"><i class="fas fa-layer-group"></i> 🌱 土壤剖面</div>
+        <p style="font-size:0.72rem;color:var(--text2);">点击地图上任意位置查看土壤剖面（可重复点击）</p>
+        <button onclick="cancelSoilProfile()" class="btn-mini clear" style="width:100%;margin-top:6px;padding:6px;font-size:0.7rem;">取消</button>`;
+    document.getElementById('toolResultBox').innerHTML='<div class="empty">点击地图查看土壤信息</div>';
+    startSoilProfileClick();
+}
+function startSoilProfileClick(){
+    if(activeTool!=='soilprofile')return;
+    document.body.style.cursor='crosshair';
+    document.getElementById('measureTip').textContent='🌱 点击地图查看土壤剖面';document.getElementById('measureTip').style.display='block';
+    if(_mapClickKey){ol.Observable.unByKey(_mapClickKey);_mapClickKey=null;}
+    _mapClickKey=map.once('singleclick',async e=>{_mapClickKey=null;
+        document.getElementById('measureTip').style.display='none';document.body.style.cursor='';
+        let c2436;try{c2436=ol.proj.transform(e.coordinate,'EPSG:3857','EPSG:2436');}catch(err){addResult('🌱 土壤剖面','❌ 坐标转换失败');startSoilProfileClick();return;}
+        document.getElementById('toolResultBox').innerHTML='<div class="empty">⏳ 正在查询...</div>';
+        try{
+            const resp=await fetch(API.soilInfo,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({x:c2436[0],y:c2436[1]})});
+            const data=await resp.json();
+            if(data.code!==0){addResult('🌱 土壤剖面','❌ '+(data.message||'查询失败'));addHistory('土壤剖面','查询失败');startSoilProfileClick();return;}
+            const d=data.data||{};
+            const labels={gid:'地块编号',县名称:'所在县',省土类名称:'土壤大类',省亚类名称:'土壤亚类',省土属名称:'土壤土属',省土种名称:'土壤土种',有机质:'有机质含量',"16ph":'pH值(2016)',碱解氮:'碱解氮',有效磷:'有效磷',速效钾:'速效钾',耕层厚度:'耕层厚度',年降水量:'年降水量',海拔:'海拔'};
+            const units={gid:'',县名称:'',省土类名称:'',省亚类名称:'',省土属名称:'',省土种名称:'',有机质:'g/kg',"16ph":'',碱解氮:'mg/kg',有效磷:'mg/kg',速效钾:'mg/kg',耕层厚度:'cm',年降水量:'mm',海拔:'m'};
+            const g1=['gid','县名称','省土类名称','省亚类名称','省土属名称','省土种名称'];
+            const g2=['有机质','16ph','碱解氮','有效磷','速效钾','耕层厚度','年降水量','海拔'];
+            // 地图弹窗
+            let popHtml=`<div class="soil-poptitle">🌱 ${d.县名称||''} · ${d.省土属名称||''}</div>`;
+            g2.slice(0,5).forEach(k=>{if(d[k]!=null&&d[k]!==undefined)popHtml+=`<div class="soil-poprow"><span class="slbl">${labels[k]}</span><span class="sval">${d[k]}${units[k]?' '+units[k]:''}</span></div>`;});
+            document.getElementById('soilPopupContent').innerHTML=popHtml;
+            window._soilOverlay.setPosition(e.coordinate);
+            document.getElementById('soilPopup').classList.add('show');
+            // 结果框
+            let html=`<strong>🌱 土壤剖面信息</strong><br><span style="font-size:0.65rem;color:var(--text3);">📍 ${d.县名称||''} | 编号 #${d.gid||''}</span>`;
+            html+=`<div class="res-item" style="margin-top:4px;"><div class="res-title">📋 基本信息</div><div class="res-detail">`;
+            g1.forEach(k=>{if(d[k]!=null&&d[k]!==undefined)html+=`<strong>${labels[k]}</strong>: ${d[k]}${units[k]?' '+units[k]:''}<br>`;});
+            html+=`</div></div><div class="res-item"><div class="res-title">🧪 土壤属性</div><div class="res-detail">`;
+            g2.forEach(k=>{if(d[k]!=null&&d[k]!==undefined)html+=`<strong>${labels[k]}</strong>: ${d[k]}${units[k]?' '+units[k]:''}<br>`;});
+            html+=`</div></div>`;
+            addResultRaw(html);addHistory('土壤剖面',`${d.县名称||''} #${d.gid||''} | ${d.省土属名称||''}`);
+            startSoilProfileClick();
+        }catch(err){addResult('🌱 土壤剖面','❌ 网络错误，请检查后端是否运行');addHistory('土壤剖面','网络错误');startSoilProfileClick();}
+    });
+}
+function cancelSoilProfile(){deactivateAllTools();backToToolGrid();}
+
+// ---- 坐标拾取 ----
+function startCoordPick(){
+    document.getElementById('toolPanelContent').innerHTML=`
+        <div class="section-label"><i class="fas fa-map-pin"></i> 📍 坐标拾取</div>
+        <p style="font-size:0.72rem;color:var(--text2);">点击地图获取坐标（关闭弹窗后可继续点击）</p>
+        <button onclick="cancelCoordPick()" class="btn-mini clear" style="width:100%;margin-top:6px;padding:6px;font-size:0.7rem;">取消</button>`;
+    document.getElementById('toolResultBox').innerHTML='<div class="empty">点击地图获取坐标</div>';
+    startCoordPickClick();
+}
+function startCoordPickClick(){
+    if(activeTool!=='coordpick')return;
+    document.body.style.cursor='crosshair';
+    document.getElementById('measureTip').textContent='📍 点击地图获取坐标';document.getElementById('measureTip').style.display='block';
+    if(_mapClickKey){ol.Observable.unByKey(_mapClickKey);_mapClickKey=null;}
+    _mapClickKey=map.once('singleclick',async e=>{_mapClickKey=null;
+        document.getElementById('measureTip').style.display='none';document.body.style.cursor='';
+        const lonlat=ol.proj.toLonLat(e.coordinate);
+        const mercator=e.coordinate;
+        let ext2436html='';let ext2436='';
+        try{const t=ol.proj.transform(e.coordinate,'EPSG:3857','EPSG:2436');ext2436=`${t[0].toFixed(2)}, ${t[1].toFixed(2)}`;ext2436html=`<div class="coord-row"><div class="coord-label">📏 EPSG:2436</div><div class="coord-val">${ext2436}</div></div>`;}catch(e){}
+        document.getElementById('popupContent').innerHTML=`
+            <div class="coord-row"><div class="coord-label">📍 经纬度 WGS84</div><div class="coord-val">${lonlat[0].toFixed(6)}°  ${lonlat[1].toFixed(6)}°</div></div>
+            <div class="coord-row"><div class="coord-label">📐 Web墨卡托</div><div class="coord-val">${mercator[0].toFixed(2)}, ${mercator[1].toFixed(2)}</div></div>${ext2436html}`;
+        window._coordOverlay.setPosition(e.coordinate);
+        document.getElementById('coordPopup').classList.add('show');
+        const result=`📍 经纬度：<strong>${lonlat[0].toFixed(6)}°, ${lonlat[1].toFixed(6)}°</strong><br>📐 Web墨卡托：<strong>${mercator[0].toFixed(2)}, ${mercator[1].toFixed(2)}</strong><br>📏 EPSG:2436：<strong>${ext2436||'转换失败'}</strong>`;
+        addResult('📍 坐标拾取',result);
+        addHistory('坐标拾取',`${lonlat[0].toFixed(4)}°, ${lonlat[1].toFixed(4)}°`);
+        startCoordPickClick();
+    });
+}
+function cancelCoordPick(){deactivateAllTools();backToToolGrid();}
+
+function closePopup(){document.getElementById('coordPopup').classList.remove('show');if(activeTool==='coordpick')startCoordPickClick();}
+function closeSoilPopup(){document.getElementById('soilPopup').classList.remove('show');if(activeTool==='soilprofile')startSoilProfileClick();}
+
+// ---- 查询结果 & 历史 ----
+const allResults=[]; // 全局结果池，按时间排序
+
+function addResult(title,detail){
+    const ts=new Date().toLocaleTimeString();
+    allResults.push({title,detail,time:ts,raw:false});
+    const p=document.getElementById('toolResultBox');
+    if(p)p.innerHTML=`<div class="res-item"><div class="res-title">${title}</div><div class="res-detail">${detail}</div><div class="res-time">🕐 ${ts}</div></div>`;
+}
+function addResultRaw(html){
+    const ts=new Date().toLocaleTimeString();
+    allResults.push({html,time:ts,raw:true});
+    const p=document.getElementById('toolResultBox');
+    if(p)p.innerHTML=`<div class="res-item"><div class="res-time">🕐 ${ts}</div>${html}</div>`;
+}
+function addHistory(tool,detail){
+    queryHistory.unshift({tool,detail,time:new Date().toLocaleString()});
+    if(queryHistory.length>20)queryHistory.pop();
+    renderHistory();
+}
+function renderHistory(){
+    const b=document.getElementById('historyBox');
+    const c=document.getElementById('historyCount');
+    if(c)c.textContent=queryHistory.length>0?`(${queryHistory.length})`:'';
+    if(queryHistory.length===0){b.innerHTML='<div class="empty">暂无历史记录</div>';return;}
+    b.innerHTML=queryHistory.map((h,i)=>`<div class="res-item" onclick="replayHistory(${i})" title="点击重新查看"><div class="res-title">${h.tool}</div><div class="res-detail">${h.detail}</div><div class="res-time">🕐 ${h.time}</div></div>`).join('');
+}
+function replayHistory(i){if(queryHistory[i]){addResult(queryHistory[i].tool,queryHistory[i].detail);}}
+function clearHistory(){queryHistory.length=0;renderHistory();toast('历史已清空','ok');}
+function clearAllDrawings(){drawSource.clear();queryResultSource.clear();deactivateAllTools();allResults.length=0;renderHistory();toast('已清除所有图形','ok');}
+
+// ============================================================
+//  初始化
+// ============================================================
+function initMap(){
+    l1=wmsLayer(LG.g1);l2=wmsLayer(LG.g2);l3=wmsLayer(LG.g3);activeWmsLayer=l1;
+    const gaodeL=new ol.layer.Tile({source:new ol.source.XYZ({url:'https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',crossOrigin:'anonymous'})});
+    const satL=new ol.layer.Tile({source:new ol.source.XYZ({url:'https://webst02.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',crossOrigin:'anonymous'})});
+    const esriStL=new ol.layer.Tile({source:new ol.source.XYZ({url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',crossOrigin:'anonymous'})});
+    const esriTopoL=new ol.layer.Tile({source:new ol.source.XYZ({url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',crossOrigin:'anonymous'})});
+    const cleanL=new ol.layer.Tile({source:new ol.source.XYZ({url:'https://{a-c}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',crossOrigin:'anonymous'})});
+    basemaps={gaode:gaodeL,satellite:satL,esriStreet:esriStL,esriTopo:esriTopoL,clean:cleanL};
+    drawSource=new ol.source.Vector();
+    drawLayer=new ol.layer.Vector({source:drawSource,style:new ol.style.Style({stroke:new ol.style.Stroke({color:'#ff6b35',width:2,dash:[8,4]}),fill:new ol.style.Fill({color:'rgba(255,107,53,0.1)'}),image:new ol.style.Circle({radius:5,fill:new ol.style.Fill({color:'#ff6b35'}),stroke:new ol.style.Stroke({color:'white',width:2})})})});
+    queryResultSource=new ol.source.Vector();
+    queryResultLayer=new ol.layer.Vector({source:queryResultSource,zIndex:999,style:new ol.style.Style({stroke:new ol.style.Stroke({color:'#ff6b00',width:4}),fill:new ol.style.Fill({color:'rgba(255,107,0,0.25)'}),image:new ol.style.Circle({radius:7,fill:new ol.style.Fill({color:'#ff6b00'}),stroke:new ol.style.Stroke({color:'white',width:2})})})});
+    map=new ol.Map({target:'map',layers:[basemaps.gaode,l1,l2,l3,queryResultLayer,drawLayer],view:new ol.View({center:ol.proj.fromLonLat([117.5,26.0]),zoom:7.5,minZoom:5,maxZoom:16})});
+    map.addControl(new ol.control.ScaleLine({units:'metric',bar:true}));
+
+    // 坐标弹窗 Overlay
+    window._coordOverlay=new ol.Overlay({element:document.getElementById('coordPopup'),positioning:'bottom-center',offset:[0,-8],autoPan:{animation:{duration:250}},stopEvent:false});
+    map.addOverlay(window._coordOverlay);
+    // 土壤剖面弹窗 Overlay
+    window._soilOverlay=new ol.Overlay({element:document.getElementById('soilPopup'),positioning:'bottom-center',offset:[0,-10],autoPan:{animation:{duration:250}},stopEvent:false});
+    map.addOverlay(window._soilOverlay);
+
+    const menu=document.getElementById('basemapMenu');
+    document.getElementById('basemapBtn').addEventListener('click',e=>{e.stopPropagation();menu.style.display=menu.style.display==='block'?'none':'block';const rect=e.target.getBoundingClientRect();menu.style.top=(rect.bottom+4)+'px';menu.style.left=rect.left+'px';menu.style.right='auto';});
+    document.querySelectorAll('.basemap-option').forEach(o=>{o.addEventListener('click',()=>{switchBasemap(o.dataset.type);menu.style.display='none';});});
+    document.addEventListener('click',()=>{menu.style.display='none';});
+    document.getElementById('resetViewBtn').addEventListener('click',resetView);
+
+    btnG1=document.getElementById('btnGroup1');btnG2=document.getElementById('btnGroup2');btnG3=document.getElementById('btnGroup3');
+    btnG1.onclick=()=>switchLayer(l1,btnG1,'有机质+县区','organic');
+    btnG2.onclick=()=>switchLayer(l2,btnG2,'土属+县区','soiltype');
+    btnG3.onclick=()=>switchLayer(l3,btnG3,'降水量+县区','precip');
+
+    l1.setVisible(true);updateLegend('organic');
+    document.getElementById('statusMsg').innerHTML='🗺️ 高德中文 | 有机质专题';
+
+    document.getElementById('screenshotBtn').addEventListener('click',()=>{
+        const md=document.getElementById('map'),sd=document.getElementById('statusMsg');
+        const orig=sd.innerHTML;sd.style.display='none';
+        html2canvas(md,{scale:2,backgroundColor:'#f0f2f5',useCORS:true}).then(canvas=>{
+            sd.style.display='';const a=document.createElement('a');
+            a.download=`福建土壤专题图_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+            a.href=canvas.toDataURL();a.click();sd.innerHTML='📸 截图已保存！';setTimeout(()=>{sd.innerHTML=orig;},2000);
+        }).catch(err=>{sd.style.display='';console.error(err);sd.innerHTML='❌ 截图失败';setTimeout(()=>{sd.innerHTML=orig;},3000);});
+    });
+}
+
+// ============================================================
+//  UI
+// ============================================================
+let authMode='login';
+function toggleAuthForm(){
+    authMode=authMode==='login'?'register':'login';
+    document.getElementById('loginForm').style.display=authMode==='login'?'block':'none';
+    document.getElementById('registerForm').style.display=authMode==='register'?'block':'none';
+    document.getElementById('toggleText').innerHTML=authMode==='login'?'<span onclick="toggleAuthForm()">没有账号？点击注册</span>':'<span onclick="toggleAuthForm()">已有账号？点击登录</span>';
+    document.getElementById('authMsg').className='msg-box';document.getElementById('authMsg').textContent='';
+}
+function msg(el,txt,type){const e=document.getElementById(el);e.textContent=txt;e.className='msg-box '+type;}
+function toast(msg_,type){const e=document.getElementById('toastPop');e.textContent=msg_;e.className='toast-pop '+type+' show';setTimeout(()=>e.classList.remove('show'),2500);}
+function updateNavbar(u){
+    const ini=(u.nickname||u.username).charAt(0).toUpperCase();
+    const tags=(u.roles||[]).map(r=>`<span class="role-tag ${rn(r)}">${rn(r)}</span>`).join('');
+    document.getElementById('userPill').innerHTML=`<span class="av">${ini}</span> ${u.nickname||u.username} ${tags}`;
+    if(isAdmin(u))document.getElementById('adminBtn').style.display='flex';
+}
+// ---- 登录 ----
+document.getElementById('loginForm').addEventListener('submit',async e=>{e.preventDefault();
+    const un=document.getElementById('loginUser').value.trim();
+    const pw=document.getElementById('loginPass').value;
+    if(!un||!pw){msg('authMsg','请输入用户名和密码','err');return;}
+    try{
+        const resp=await fetch(API.login,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pw})});
+        console.log('登录响应状态:',resp.status,resp.ok);
+        const text=await resp.text();console.log('登录响应内容:',text);
+        if(!text){msg('authMsg','服务器返回空响应','err');return;}
+        let data;try{data=JSON.parse(text);}catch(e){msg('authMsg','响应格式错误: '+text.substring(0,50),'err');return;}
+        if(!resp.ok&&data.code!==200&&data.code!==0){msg('authMsg',data.message||data.msg||'登录失败，状态码:'+resp.status,'err');return;}
+        let user=data.data||data.user||data.result||data;
+        // 兼容各种嵌套：data.data.user / data.data.token+data.data.userInfo
+        if(user&&!user.username&&user.user)user=user.user;
+        if(user&&!user.username&&user.userInfo)user=user.userInfo;
+        if(!user||!(user.username||user.nickname||user.account||user.loginName)){console.log('完整响应:',JSON.stringify(data));msg('authMsg','登录成功但未获取到用户信息，请查看控制台','err');return;}
+        sessionStorage.setItem(K_SESSION,JSON.stringify({user:user,from:'api'}));
+        document.getElementById('authOverlay').classList.add('hidden');
+        updateNavbarFromApi(user);
+    }catch(err){msg('authMsg','网络错误: '+err.message,'err');}
+});
+
+// ---- 注册 ----
+document.getElementById('registerForm').addEventListener('submit',async e=>{e.preventDefault();
+    const un=document.getElementById('regUser').value.trim(),pw=document.getElementById('regPass').value;
+    const em=document.getElementById('regEmail').value.trim(),nn=document.getElementById('regNick').value.trim();
+    if(!un||!pw){msg('authMsg','用户名和密码不能为空','err');return;}
+    if(pw.length<6){msg('authMsg','密码长度不能少于6位','err');return;}
+    try{
+        const resp=await fetch(API.register,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:un,password:pw,email:em,nickname:nn})});
+        const data=await resp.json();
+        if(!resp.ok){msg('authMsg',data.message||data.msg||'注册失败','err');return;}
+        msg('authMsg','注册成功！请登录','ok');setTimeout(()=>toggleAuthForm(),1200);
+    }catch(err){msg('authMsg','网络错误，无法连接服务器','err');}
+});
+
+function updateNavbarFromApi(user){
+    const name=user.nickname||user.username||user.account||user.loginName||user.name||'用户';
+    const ini=name.charAt(0).toUpperCase();
+    const roles=user.roles||user.roleList||[];
+    const isAdm=roles.some(r=>(r==='admin'||r.roleName==='admin'||(typeof r==='object'&&r.name==='admin')));
+    const tags=roles.map(r=>{const n=typeof r==='string'?r:(r.roleName||r.name||'');return n?`<span class="role-tag ${n}">${n}</span>`:'';}).join('');
+    document.getElementById('userPill').innerHTML=`<span class="av">${ini}</span> ${name} ${tags}`;
+    if(isAdm)document.getElementById('adminBtn').style.display='flex';
+}
+function openProfilePanel(){const u=curUser();if(!u){toast('请先登录','err');return;}console.log('个人信息:',u);document.getElementById('profileOverlay').classList.remove('hidden');const name=u.nickname||u.realName||u.username||'用户';document.getElementById('profileAvatar').textContent=name.charAt(0).toUpperCase();const roles=u.roles||u.roleList||[];const rn_=roles.map(r=>{const n=typeof r==='string'?r:(r.roleName||r.name||'');return n?`<span class="badge ${n}">${n}</span>`:'';}).join(' ');const locked=u.locked||u.status===0;document.getElementById('profileInfo').innerHTML=`<div class="ir"><span class="lbl">用户名</span><span class="val">${u.username||'-'}</span></div><div class="ir"><span class="lbl">昵称</span><span class="val">${name}</span></div><div class="ir"><span class="lbl">邮箱</span><span class="val">${u.email||'-'}</span></div><div class="ir"><span class="lbl">角色</span><span class="val">${rn_||'普通用户'}</span></div><div class="ir"><span class="lbl">ID</span><span class="val">${u.id||'-'}</span></div><div class="ir"><span class="lbl">状态</span><span class="val"><span class="badge ${locked?'locked':'active'}">${locked?'已锁定':'正常'}</span></span></div>`;}
+function closeProfilePanel(){document.getElementById('profileOverlay').classList.add('hidden');}
+function showChangePassword(){document.getElementById('changePwdOverlay').classList.remove('hidden');document.getElementById('pwdMsg').className='msg-box';document.getElementById('pwdMsg').textContent='';document.getElementById('changePwdForm').reset();}
+function closeChangePassword(){document.getElementById('changePwdOverlay').classList.add('hidden');}
+document.getElementById('changePwdForm').addEventListener('submit',async e=>{e.preventDefault();const u=curUser();if(!u)return;const op=document.getElementById('oldPwd').value,np=document.getElementById('newPwd').value,cp=document.getElementById('confirmPwd').value;if((await _sha256(op+u.salt))!==u.password){msg('pwdMsg','原密码错误','err');return;}if(np!==cp){msg('pwdMsg','两次新密码不一致','err');return;}if(np.length<6){msg('pwdMsg','新密码长度不能少于6位','err');return;}try{await updateUser(u.id,{password:np});msg('pwdMsg','密码修改成功！','ok');setTimeout(closeChangePassword,1500);}catch(err){msg('pwdMsg',err.message,'err');}});
+
+// ============================================================
+//  管理面板
+// ============================================================
+let adminTab='users';
+function openAdminPanel(){document.getElementById('adminOverlay').classList.remove('hidden');switchAdminTab('users');refreshAdminUsers();refreshAdminRoles();refreshPermList();cancelUserEdit();cancelRoleEdit();}
+function closeAdminPanel(){document.getElementById('adminOverlay').classList.add('hidden');}
+function switchAdminTab(t){adminTab=t;document.querySelectorAll('#adminOverlay .tab-btn').forEach((b,i)=>{b.classList.toggle('active',(t==='users'&&i===0)||(t==='roles'&&i===1));});document.getElementById('adminTabUsers').style.display=t==='users'?'block':'none';document.getElementById('adminTabRoles').style.display=t==='roles'?'block':'none';if(t==='users')refreshAdminUsers();if(t==='roles'){refreshAdminRoles();refreshPermList();}}
+function refreshAdminUsers(){const uu=allUsers();document.getElementById('adminUserCount').textContent=uu.length;document.getElementById('adminUserTbody').innerHTML=uu.map(u=>{const rn_=(u.roles||[]).map(r=>`<span class="badge ${rn(r)}">${rn(r)}</span>`).join('');return`<tr><td>${u.id}</td><td><strong>${u.username}</strong></td><td>${u.nickname||'-'}</td><td>${u.email||'-'}</td><td>${rn_}</td><td><span class="badge ${u.locked?'locked':'active'}">${u.locked?'锁定':'正常'}</span></td><td>${(u.createdAt||'').substring(0,10)}</td><td><button class="btn-sm ol" onclick="editUserForm('${u.id}')"><i class="fas fa-edit"></i></button><button class="btn-sm dg" onclick="removeUser('${u.id}')"><i class="fas fa-trash"></i></button></td></tr>`;}).join('');}
+function showCreateUserForm(){document.getElementById('userEditForm').style.display='flex';document.getElementById('editUserId').value='';document.getElementById('editUsername').value='';document.getElementById('editUsername').disabled=false;document.getElementById('editPassword').value='';document.getElementById('editPassword').placeholder='密码(≥6位)';document.getElementById('editEmail').value='';document.getElementById('editNickname').value='';document.getElementById('editLocked').value='false';document.getElementById('editRoleChecks').innerHTML=allRoles().map(r=>`<label style="font-size:0.7rem;margin-right:6px;cursor:pointer;"><input type="checkbox" value="${r.id}" ${r.id==='r2'?'checked':''}> ${r.name}</label>`).join('');}
+function editUserForm(uid){const u=fu(uid);if(!u)return;document.getElementById('userEditForm').style.display='flex';document.getElementById('editUserId').value=u.id;document.getElementById('editUsername').value=u.username;document.getElementById('editUsername').disabled=true;document.getElementById('editPassword').value='';document.getElementById('editPassword').placeholder='留空不修改';document.getElementById('editEmail').value=u.email||'';document.getElementById('editNickname').value=u.nickname||'';document.getElementById('editLocked').value=u.locked?'true':'false';document.getElementById('editRoleChecks').innerHTML=allRoles().map(r=>`<label style="font-size:0.7rem;margin-right:6px;cursor:pointer;"><input type="checkbox" value="${r.id}" ${(u.roles||[]).includes(r.id)?'checked':''}> ${r.name}</label>`).join('');}
+function cancelUserEdit(){document.getElementById('userEditForm').style.display='none';}
+async function saveUser(){const id=document.getElementById('editUserId').value,un=document.getElementById('editUsername').value.trim(),pw=document.getElementById('editPassword').value,em=document.getElementById('editEmail').value.trim(),nn=document.getElementById('editNickname').value.trim(),locked=document.getElementById('editLocked').value==='true',rids=[...document.querySelectorAll('#editRoleChecks input:checked')].map(cb=>cb.value);try{if(id){const upd={email:em,nickname:nn,locked,roles:rids};if(pw)upd.password=pw;await updateUser(id,upd);toast('更新成功','ok');}else{if(!un||!pw||pw.length<6){toast('用户名和密码(≥6位)为必填','err');return;}if(fubyname(un)){toast('用户名已存在','err');return;}await createUser(un,pw,em,nn,rids);toast('创建成功','ok');}cancelUserEdit();refreshAdminUsers();}catch(err){toast(err.message,'err');}}
+function removeUser(uid){const u=fu(uid);if(!u)return;if(!confirm(`确定删除用户 "${u.username}" 吗？`))return;if(u.id===curUser()?.id){toast('不能删除自己','err');return;}deleteUser(uid);refreshAdminUsers();toast('已删除','ok');}
+function refreshAdminRoles(){const rs=allRoles();document.getElementById('adminRoleTbody').innerHTML=rs.map(r=>{const pn_=(r.perms||[]).map(p=>`<span style="font-size:0.6rem;background:#eef2f7;padding:2px 5px;border-radius:7px;margin:1px;">${pn(p)}</span>`).join(' ');return`<tr><td>${r.id}</td><td><strong>${r.name}</strong></td><td>${r.desc||'-'}</td><td>${pn_}</td><td><button class="btn-sm dg" onclick="removeRole('${r.id}')"><i class="fas fa-trash"></i></button></td></tr>`;}).join('');}
+function refreshPermList(){document.getElementById('permList').innerHTML=allPerms().map(p=>`<span style="font-size:0.72rem;padding:7px 10px;background:#f8fafc;border-radius:9px;border:1px solid #eef2f7;"><strong>${p.name}</strong><br><small style="color:#8aa3b5;">${p.desc}</small></span>`).join('');}
+function showCreateRoleForm(){document.getElementById('roleEditForm').style.display='flex';document.getElementById('newRoleName').value='';document.getElementById('newRoleDesc').value='';document.getElementById('newRolePermChecks').innerHTML=allPerms().map(p=>`<label style="font-size:0.66rem;margin-right:6px;cursor:pointer;"><input type="checkbox" value="${p.id}"> ${p.name}</label>`).join('');}
+function cancelRoleEdit(){document.getElementById('roleEditForm').style.display='none';}
+function saveRole(){const n=document.getElementById('newRoleName').value.trim(),d=document.getElementById('newRoleDesc').value.trim();if(!n){toast('请输入角色名','err');return;}const pids=[...document.querySelectorAll('#newRolePermChecks input:checked')].map(cb=>cb.value);const rs=allRoles();rs.push({id:'r'+Date.now(),name:n,desc:d,perms:pids});saveRoles(rs);cancelRoleEdit();refreshAdminRoles();toast('角色已创建','ok');}
+function removeRole(rid){const r=allRoles().find(r=>r.id===rid);if(!r)return;if(!confirm(`确定删除角色 "${r.name}" 吗？`))return;if(allUsers().some(u=>(u.roles||[]).includes(rid))){toast('该角色仍有用户使用','err');return;}saveRoles(allRoles().filter(r=>r.id!==rid));refreshAdminRoles();toast('角色已删除','ok');}
+
+// ============================================================
+//  Boot
+// ============================================================
+async function bootstrap(){
+    await initData();const u=curUser();
+    if(u){document.getElementById('authOverlay').classList.add('hidden');updateNavbar(u);}
+    else{document.getElementById('authOverlay').classList.remove('hidden');}
+    initMap();
+}
+bootstrap().catch(err=>{console.error(err);initMap();});
+document.getElementById('adminOverlay').addEventListener('click',function(e){if(e.target===this)closeAdminPanel();});
+document.getElementById('profileOverlay').addEventListener('click',function(e){if(e.target===this)closeProfilePanel();});
+document.getElementById('changePwdOverlay').addEventListener('click',function(e){if(e.target===this)closeChangePassword();});
+</script>
+</body>
+</html>
